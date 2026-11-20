@@ -3,6 +3,10 @@
 A single-organization email marketing platform built on Next.js 16 (App
 Router), TypeScript, MongoDB/Mongoose, and Resend.
 
+This project is a donation from Jmmadubuike to businesses that find it hard to
+reach their email list with promotions and marketing. Use it, adapt it, and
+share it freely under the MIT license.
+
 ## Current status
 
 In place so far:
