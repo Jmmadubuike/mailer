@@ -23,3 +23,52 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+@layer base {
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    transition-property: color, background-color, border-color, box-shadow,
+      opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  tbody tr {
+    transition: background-color 120ms ease;
+  }
+
+  tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  main > * {
+    animation: fade-in 0.3s ease backwards;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 24px -14px rgb(15 23 42 / 0.2);
+}

@@ -353,7 +353,7 @@ function CombinedStats({ stats }: { stats: DomainStats }) {
       {items.map(([label, value]) => (
         <div
           key={label}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-3"
+          className="card-hover rounded-lg border border-slate-200 bg-white px-4 py-3"
         >
           <p className="text-xs text-slate-500">{label}</p>
           <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>

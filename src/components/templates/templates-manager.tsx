@@ -9,6 +9,15 @@ import {
   type TemplateColors,
 } from "@/lib/templates/colors";
 
+const COLOR_PRESETS: Array<{ name: string; colors: TemplateColors }> = [
+  { name: "Indigo", colors: { primary: "#4f46e5", background: "#f4f5f7", text: "#1f2937" } },
+  { name: "Ocean", colors: { primary: "#2563eb", background: "#eff6ff", text: "#0f172a" } },
+  { name: "Emerald", colors: { primary: "#059669", background: "#ecfdf5", text: "#1f2937" } },
+  { name: "Crimson", colors: { primary: "#dc2626", background: "#fef2f2", text: "#1f2937" } },
+  { name: "Amber", colors: { primary: "#d97706", background: "#fffbeb", text: "#1f2937" } },
+  { name: "Slate", colors: { primary: "#0f172a", background: "#f8fafc", text: "#1f2937" } },
+];
+
 export interface TemplateDTO {
   id: string;
   name: string;
@@ -91,7 +100,7 @@ export function TemplatesManager({
           templates.map((template) => (
             <div
               key={template.id}
-              className="rounded-lg border border-slate-200 bg-white p-5"
+              className="card-hover rounded-lg border border-slate-200 bg-white p-5"
             >
               <p className="font-medium text-slate-900">{template.name}</p>
               <p className="text-xs text-slate-500">{template.category ?? "Uncategorized"}</p>
@@ -203,6 +212,19 @@ function TemplateEditor({
           <ColorField label="Primary" value={colors.primary} onChange={(value) => setColors({ ...colors, primary: value })} />
           <ColorField label="Background" value={colors.background} onChange={(value) => setColors({ ...colors, background: value })} />
           <ColorField label="Text" value={colors.text} onChange={(value) => setColors({ ...colors, text: value })} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-slate-600">Presets:</span>
+          {COLOR_PRESETS.map((preset) => (
+            <button
+              key={preset.name}
+              type="button"
+              onClick={() => setColors(preset.colors)}
+              className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {preset.name}
+            </button>
+          ))}
         </div>
 
         <EmailComposer
