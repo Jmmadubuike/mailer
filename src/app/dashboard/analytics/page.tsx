@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/authorize";
 import { getDomainStats } from "@/modules/sending-domains/service";
 import { SendingDomain } from "@/models/SendingDomain";
+import { Stat } from "@/components/ui/stat";
 
 export const dynamic = "force-dynamic";
 
@@ -32,16 +33,17 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        <Stat label="Sent" value={combined.sent} />
-        <Stat label="Delivered" value={combined.delivered} />
-        <Stat label="Bounces" value={combined.bounced} />
-        <Stat label="Complaints" value={combined.complaints} />
-        <Stat label="Opens" value={combined.opens} />
-        <Stat label="Clicks" value={combined.clicks} />
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+        <Stat label="Sent" value={combined.sent} size="compact" />
+        <Stat label="Delivered" value={combined.delivered} size="compact" />
+        <Stat label="Bounces" value={combined.bounced} size="compact" />
+        <Stat label="Complaints" value={combined.complaints} size="compact" />
+        <Stat label="Opens" value={combined.opens} size="compact" />
+        <Stat label="Clicks" value={combined.clicks} size="compact" />
         <Stat
           label="Delivery rate"
           value={`${(combined.deliveryRate * 100).toFixed(1)}%`}
+          size="compact"
         />
       </div>
 
@@ -98,11 +100,3 @@ export default async function AnalyticsPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="card-hover rounded-lg border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>
-    </div>
-  );
-}

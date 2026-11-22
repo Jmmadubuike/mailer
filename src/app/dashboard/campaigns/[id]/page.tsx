@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/authorize";
 import { getCampaignReport, listCampaignRecipients } from "@/modules/campaigns/report";
 import { SendingDomain } from "@/models/SendingDomain";
 import { CampaignActions } from "@/components/campaigns/campaign-actions";
+import { Stat } from "@/components/ui/stat";
 
 export const dynamic = "force-dynamic";
 
@@ -53,14 +54,18 @@ export default async function CampaignDetailPage({
         />
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        <Stat label="Recipients" value={stats.total} />
-        <Stat label="Sent" value={stats.sent} />
-        <Stat label="Delivered" value={stats.delivered} />
-        <Stat label="Bounced" value={stats.bounced} />
-        <Stat label="Opens" value={stats.opens} />
-        <Stat label="Clicks" value={stats.clicks} />
-        <Stat label="Delivery rate" value={`${(stats.deliveryRate * 100).toFixed(1)}%`} />
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+        <Stat label="Recipients" value={stats.total} size="compact" />
+        <Stat label="Sent" value={stats.sent} size="compact" />
+        <Stat label="Delivered" value={stats.delivered} size="compact" />
+        <Stat label="Bounced" value={stats.bounced} size="compact" />
+        <Stat label="Opens" value={stats.opens} size="compact" />
+        <Stat label="Clicks" value={stats.clicks} size="compact" />
+        <Stat
+          label="Delivery rate"
+          value={`${(stats.deliveryRate * 100).toFixed(1)}%`}
+          size="compact"
+        />
       </div>
 
       <div className="mt-8 flex items-center justify-between">
@@ -124,11 +129,3 @@ export default async function CampaignDetailPage({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="card-hover rounded-lg border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>
-    </div>
-  );
-}

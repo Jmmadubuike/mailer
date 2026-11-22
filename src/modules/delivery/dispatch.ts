@@ -145,6 +145,15 @@ export async function dispatchDueCampaigns(): Promise<number> {
         `Failed to dispatch scheduled campaign ${campaign._id}`,
         error,
       );
+      // If the dispatch failed before creating jobs, revert the claim so the
+      // campaign is never stranded in "queued" and later mislabeled "sent".
+      const current = await Campaign.findById(campaign._id).select("status").lean();
+      if (current?.status === "queued") {
+        await Campaign.updateOne(
+          { _id: campaign._id, status: "queued" },
+          { $set: { status: "scheduled" } },
+        );
+      }
     }
   }
 

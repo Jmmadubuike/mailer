@@ -4,6 +4,7 @@ import { authorizeApi, isApiError } from "@/lib/auth/api";
 import { readJson } from "@/lib/api";
 import { USER_ROLES } from "@/models/User";
 import { createUser, listUsers } from "@/modules/users/service";
+import { AppError } from "@/lib/errors";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -62,9 +63,15 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create user" },
-      { status: 409 },
+      { error: "Failed to create user" },
+      { status: 500 },
     );
   }
 }

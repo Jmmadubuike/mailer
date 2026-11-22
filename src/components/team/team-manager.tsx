@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PasswordInput } from "@/components/ui/password-input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Toast } from "@/components/ui/toast";
+import { Dialog as Modal } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface UserDTO {
   id: string;
@@ -26,6 +30,8 @@ export function TeamManager({
   const [creating, setCreating] = useState(false);
   const [passwordFor, setPasswordFor] = useState<UserDTO | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ type: "remove" | "disable"; id: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const isOwner = role === "owner";
 
   async function patch(id: string, body: Record<string, unknown>) {
@@ -41,13 +47,32 @@ export function TeamManager({
     }
   }
 
-  async function remove(id: string) {
-    const response = await fetch(`/api/users/${id}`, { method: "DELETE" });
+  function remove(id: string) {
+    setConfirm({ type: "remove", id });
+  }
+
+  function requestDisable(id: string) {
+    setConfirm({ type: "disable", id });
+  }
+
+  async function confirmedAction() {
+    if (!confirm) return;
+    setBusy(true);
+    const response =
+      confirm.type === "remove"
+        ? await fetch(`/api/users/${confirm.id}`, { method: "DELETE" })
+        : await fetch(`/api/users/${confirm.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isActive: false }),
+          });
+    setBusy(false);
+    setConfirm(null);
     if (response.ok) {
       router.refresh();
-      setToast("User removed");
+      setToast(confirm.type === "remove" ? "User removed" : "User disabled");
     } else {
-      setToast("Could not remove user");
+      setToast("Update failed");
     }
   }
 
@@ -109,22 +134,16 @@ export function TeamManager({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        user.isActive
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
+                    <Badge tone={user.isActive ? "success" : "neutral"}>
                       {user.isActive ? "active" : "disabled"}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setPasswordFor(user)}
-                        className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
                         Reset password
                       </button>
@@ -133,16 +152,18 @@ export function TeamManager({
                           <button
                             type="button"
                             onClick={() =>
-                              patch(user.id, { isActive: !user.isActive })
+                              user.isActive
+                                ? requestDisable(user.id)
+                                : patch(user.id, { isActive: true })
                             }
-                            className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                           >
                             {user.isActive ? "Disable" : "Enable"}
                           </button>
                           <button
                             type="button"
                             onClick={() => remove(user.id)}
-                            className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                            className="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
                           >
                             Remove
                           </button>
@@ -179,11 +200,22 @@ export function TeamManager({
         />
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm?.type === "remove" ? "Remove user?" : "Disable user?"}
+        description={
+          confirm?.type === "remove"
+            ? "This permanently removes the user from the platform."
+            : "The user will no longer be able to sign in."
+        }
+        confirmLabel={confirm?.type === "remove" ? "Remove" : "Disable"}
+        destructive={confirm?.type === "remove"}
+        busy={busy}
+        onConfirm={confirmedAction}
+        onClose={() => setConfirm(null)}
+      />
+
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }
@@ -220,10 +252,10 @@ function CreateUserDialog({
     <Dialog onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-3">
         <h2 className="text-lg font-semibold text-slate-900">Invite user</h2>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" required className={inputClass} />
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required className={inputClass} />
-        <PasswordInput value={password} onChange={setPassword} placeholder="Temporary password (min 8)" required minLength={8} autoComplete="new-password" />
-        <select value={role} onChange={(e) => setRole(e.target.value)} className={inputClass}>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" aria-label="Name" required className={inputClass} />
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" aria-label="Email" required className={inputClass} />
+        <PasswordInput value={password} onChange={setPassword} placeholder="Temporary password (min 8)" ariaLabel="Temporary password" required minLength={8} autoComplete="new-password" />
+        <select value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role" className={inputClass}>
           <option value="owner">owner</option>
           <option value="administrator">administrator</option>
           <option value="campaign_manager">campaign_manager</option>
@@ -288,10 +320,8 @@ const secondaryClass = "rounded-md border border-slate-300 px-4 py-2 text-sm fon
 
 function Dialog({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
+    <Modal open onClose={onClose} maxWidthClass="max-w-sm">
+      {children}
+    </Modal>
   );
 }

@@ -3,6 +3,7 @@ import { WebhookEvent } from "@/models/WebhookEvent";
 import { CampaignRecipient, type ICampaignRecipient } from "@/models/CampaignRecipient";
 import { SendingDomain } from "@/models/SendingDomain";
 import { Suppression } from "@/models/Suppression";
+import { RANK } from "@/modules/webhooks/status";
 
 export interface ResendWebhookPayload {
   type?: string;
@@ -60,47 +61,78 @@ async function applyEmailEvent(
   const event = emailEventFromType(type);
   if (!event) return;
 
-  recipient.events = recipient.events.includes(event)
-    ? recipient.events
-    : [...recipient.events, event];
+  await CampaignRecipient.updateOne(
+    { _id: recipient._id },
+    buildEventPipeline(event),
+  );
 
-  switch (event) {
-    case "sent":
-      if (recipient.status === "pending") recipient.status = "sent";
-      break;
-    case "delivered":
-      recipient.status = "delivered";
-      break;
-    case "bounced":
-      recipient.status = "bounced";
-      await upsertSuppression(recipient.email, "bounce");
-      break;
-    case "complained":
-      recipient.status = "complained";
-      await upsertSuppression(recipient.email, "complaint");
-      break;
-    case "opened":
-      recipient.openedAt = new Date();
-      if (["sent", "delivered"].includes(recipient.status)) {
-        recipient.status = "opened";
-      }
-      break;
-    case "clicked":
-      recipient.clickedAt = new Date();
-      recipient.status = "clicked";
-      break;
-    case "unsubscribed":
-      recipient.status = "unsubscribed";
-      break;
-    case "failed":
-      recipient.status = "failed";
-      break;
-    default:
-      break;
+  if (event === "bounced") {
+    await upsertSuppression(recipient.email, "bounce");
+  }
+  if (event === "complained") {
+    await upsertSuppression(recipient.email, "complaint");
   }
 
   void data;
-  await recipient.save();
+}
+
+function rankExpression(): Record<string, unknown> {
+  return {
+    $switch: {
+      branches: Object.entries(RANK).map(([status, rank]) => ({
+        case: { $eq: ["$status", status] },
+        then: rank,
+      })),
+      default: -1,
+    },
+  };
+}
+
+function statusExpression(event: string): unknown {
+  const terminal: Record<string, string> = {
+    bounced: "bounced",
+    complained: "complained",
+    unsubscribed: "unsubscribed",
+    failed: "failed",
+    suppressed: "suppressed",
+  };
+  if (terminal[event]) return terminal[event];
+  if (event === "sent") {
+    return { $cond: [{ $eq: ["$status", "pending"] }, "sent", "$status"] };
+  }
+  const monotonic: Record<string, string> = {
+    delivered: "delivered",
+    opened: "opened",
+    clicked: "clicked",
+  };
+  if (monotonic[event]) {
+    return {
+      $cond: [
+        { $lt: [rankExpression(), RANK[monotonic[event]]] },
+        monotonic[event],
+        "$status",
+      ],
+    };
+  }
+  return null;
+}
+
+function buildEventPipeline(event: string): Record<string, unknown>[] {
+  const now = new Date();
+  const set: Record<string, unknown> = {
+    events: { $setUnion: [{ $ifNull: ["$events", []] }, [event]] },
+  };
+  if (event === "opened") {
+    set.openCount = { $add: [{ $ifNull: ["$openCount", 0] }, 1] };
+    set.openedAt = { $ifNull: ["$openedAt", now] };
+  }
+  if (event === "clicked") {
+    set.clickCount = { $add: [{ $ifNull: ["$clickCount", 0] }, 1] };
+    set.clickedAt = { $ifNull: ["$clickedAt", now] };
+  }
+  const status = statusExpression(event);
+  if (status !== null) set.status = status;
+  return [{ $set: set }];
 }
 
 function emailEventFromType(type: string): string | null {

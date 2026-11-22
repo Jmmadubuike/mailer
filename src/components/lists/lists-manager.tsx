@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Toast } from "@/components/ui/toast";
+import { Dialog } from "@/components/ui/dialog";
 
 interface ListDTO {
   id: string;
@@ -85,6 +87,7 @@ export function ListsManager({ lists }: { lists: ListDTO[] }) {
           <h2 className="text-base font-semibold text-slate-900">New list</h2>
           <input
             value={name}
+            aria-label="List name"
             onChange={(event) => setName(event.target.value)}
             placeholder="List name"
             required
@@ -92,6 +95,7 @@ export function ListsManager({ lists }: { lists: ListDTO[] }) {
           />
           <input
             value={description}
+            aria-label="Description"
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Description"
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500"
@@ -139,14 +143,10 @@ export function ListsManager({ lists }: { lists: ListDTO[] }) {
       </div>
 
       {addingTo && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-          onClick={() => setAddingTo(null)}
-        >
+        <Dialog open onClose={() => setAddingTo(null)} maxWidthClass="max-w-md">
           <form
             onSubmit={addContacts}
-            className="w-full max-w-md space-y-3 rounded-lg bg-white p-6 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
+            className="space-y-3"
           >
             <h2 className="text-lg font-semibold text-slate-900">
               Add contacts to {addingTo.name}
@@ -156,6 +156,7 @@ export function ListsManager({ lists }: { lists: ListDTO[] }) {
               onChange={(event) => setEmails(event.target.value)}
               rows={6}
               placeholder={"one@example.com\ntwo@example.com"}
+              aria-label="Email addresses"
               required
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500"
             />
@@ -176,14 +177,10 @@ export function ListsManager({ lists }: { lists: ListDTO[] }) {
               </button>
             </div>
           </form>
-        </div>
+        </Dialog>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

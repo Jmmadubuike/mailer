@@ -1,7 +1,10 @@
 import "server-only";
 import { ApplicationSetting } from "@/models/ApplicationSetting";
-import { CampaignRecipient } from "@/models/CampaignRecipient";
 import { AppError } from "@/lib/errors";
+import {
+  dailyCounterKey,
+  reservationAccepted,
+} from "@/modules/settings/limits";
 
 export interface PlatformSettings {
   globalKillSwitch: boolean;
@@ -55,15 +58,36 @@ export async function assertSendingEnabled(): Promise<void> {
   if (settings.testMode) {
     throw new AppError("Sending is disabled while test mode is enabled", 409);
   }
-  if (settings.dailySendLimit > 0) {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const sentToday = await CampaignRecipient.countDocuments({
-      providerMessageId: { $type: "string" },
-      updatedAt: { $gte: startOfDay },
-    });
-    if (sentToday >= settings.dailySendLimit) {
-      throw new AppError("Daily sending limit has been reached", 409);
-    }
+}
+
+export async function reserveDailySend(): Promise<{
+  ok: boolean;
+  key?: string;
+}> {
+  const settings = await getSettings();
+  if (settings.dailySendLimit <= 0) return { ok: true };
+
+  const key = dailyCounterKey(new Date());
+  const doc = await ApplicationSetting.findOneAndUpdate(
+    { key },
+    { $inc: { value: 1 } },
+    { upsert: true, new: true },
+  );
+  const used = Number(doc?.value ?? 0);
+
+  if (!reservationAccepted(used, settings.dailySendLimit)) {
+    await ApplicationSetting.updateOne({ key }, { $inc: { value: -1 } });
+    return { ok: false };
   }
+  return { ok: true, key };
+}
+
+export async function releaseDailySend(key?: string): Promise<void> {
+  const settings = await getSettings();
+  if (settings.dailySendLimit <= 0) return;
+  if (!key) return;
+  await ApplicationSetting.updateOne(
+    { key },
+    { $inc: { value: -1 } },
+  );
 }

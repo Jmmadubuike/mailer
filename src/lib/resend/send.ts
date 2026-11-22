@@ -1,5 +1,6 @@
 import "server-only";
 import { getClientForSendingDomain } from "@/lib/resend/client";
+import { assertStagingSendAllowed } from "@/lib/staging/guard";
 
 export interface SendThroughDomainInput {
   domainId: string;
@@ -11,6 +12,7 @@ export interface SendThroughDomainInput {
   fromEmail?: string;
   replyTo?: string;
   headers?: Record<string, string>;
+  idempotencyKey?: string;
 }
 
 export interface SendThroughDomainResult {
@@ -22,6 +24,8 @@ export interface SendThroughDomainResult {
 export async function sendThroughDomain(
   input: SendThroughDomainInput,
 ): Promise<SendThroughDomainResult> {
+  assertStagingSendAllowed(input.to);
+
   const { client, domain } = await getClientForSendingDomain(input.domainId);
 
   const fromName = input.fromName ?? domain.defaultSenderName ?? domain.name;
@@ -36,6 +40,9 @@ export async function sendThroughDomain(
     text: input.text,
     replyTo: input.replyTo ?? domain.defaultReplyTo,
     headers: input.headers,
+    idempotencyKey: input.idempotencyKey,
+  } as Parameters<typeof client.emails.send>[0] & {
+    idempotencyKey?: string;
   });
 
   if (error) {

@@ -4,7 +4,8 @@ import { authorizeApi, isApiError } from "@/lib/auth/api";
 import { readJson } from "@/lib/api";
 import { Contact, CONTACT_STATUSES } from "@/models/Contact";
 import { ListMembership } from "@/models/ListMembership";
-import { AppError } from "@/lib/errors";
+import { Suppression } from "@/models/Suppression";
+import mongoose from "mongoose";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,9 @@ export async function PATCH(request: Request, context: Context) {
   await connectDB();
 
   const { id } = await context.params;
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  }
   const parsed = updateSchema.safeParse(await readJson(request));
   if (!parsed.success) {
     return NextResponse.json(
@@ -41,7 +45,30 @@ export async function PATCH(request: Request, context: Context) {
     { $set: parsed.data },
     { new: true },
   );
-  if (!contact) throw new AppError("Contact not found", 404);
+  if (!contact) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  }
+
+  if (parsed.data.status === "unsubscribed") {
+    await Suppression.findOneAndUpdate(
+      { email: contact.email, type: "unsubscribe", scope: "all" },
+      {
+        $set: {
+          email: contact.email,
+          type: "unsubscribe",
+          scope: "all",
+          reason: "unsubscribed via dashboard",
+        },
+      },
+      { upsert: true },
+    );
+  } else if (parsed.data.status === "subscribed") {
+    await Suppression.deleteOne({
+      email: contact.email,
+      type: "unsubscribe",
+      scope: "all",
+    });
+  }
 
   return NextResponse.json({
     contact: {
@@ -61,8 +88,13 @@ export async function DELETE(_request: Request, context: Context) {
   await connectDB();
 
   const { id } = await context.params;
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  }
   const contact = await Contact.findByIdAndDelete(id);
-  if (!contact) throw new AppError("Contact not found", 404);
+  if (!contact) {
+    return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+  }
 
   await ListMembership.deleteMany({ contactId: contact._id });
   return NextResponse.json({ ok: true });

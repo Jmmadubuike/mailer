@@ -3,7 +3,6 @@ import { connectDB } from "@/lib/db/client";
 import { authorizeApi, isApiError } from "@/lib/auth/api";
 import { readJson } from "@/lib/api";
 import { Contact, CONTACT_STATUSES } from "@/models/Contact";
-import { AppError } from "@/lib/errors";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +75,10 @@ export async function POST(request: Request) {
 
   const existing = await Contact.findOne({ email: parsed.data.email }).lean();
   if (existing) {
-    throw new AppError("A contact with this email already exists", 409);
+    return NextResponse.json(
+      { error: "A contact with this email already exists" },
+      { status: 409 },
+    );
   }
 
   const contact = await Contact.create({

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseImportFile, type ParsedFile } from "@/lib/imports/client";
+import { Stat } from "@/components/ui/stat";
 
 interface ListOption {
   id: string;
@@ -89,11 +90,11 @@ export function ImportWizard({ lists }: { lists: ListOption[] }) {
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Import report</h1>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat label="Imported" value={result.imported} />
-          <Stat label="Updated" value={result.updated} />
-          <Stat label="Skipped" value={result.skipped} />
-          <Stat label="Duplicates" value={result.duplicates} />
-          <Stat label="Invalid" value={result.invalid} />
+          <Stat label="Imported" value={result.imported} size="compact" />
+          <Stat label="Updated" value={result.updated} size="compact" />
+          <Stat label="Skipped" value={result.skipped} size="compact" />
+          <Stat label="Duplicates" value={result.duplicates} size="compact" />
+          <Stat label="Invalid" value={result.invalid} size="compact" />
         </div>
         <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
           <div className="max-h-96 overflow-y-auto">
@@ -177,7 +178,7 @@ export function ImportWizard({ lists }: { lists: ListOption[] }) {
             <h2 className="text-base font-semibold text-slate-900">Custom fields</h2>
             <div className="mt-3 space-y-2">
               {customFields.map(([key, column], index) => (
-                <div key={index} className="flex gap-2">
+                <div key={index} className="flex flex-col gap-2 sm:flex-row">
                   <input
                     value={key}
                     onChange={(event) =>
@@ -186,7 +187,7 @@ export function ImportWizard({ lists }: { lists: ListOption[] }) {
                       )
                     }
                     placeholder="Field name"
-                    className="w-40 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 sm:w-40"
                   />
                   <select
                     value={column}
@@ -270,11 +271,3 @@ function ColumnSelect({ label, value, onChange, columns }: { label: string; valu
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>
-    </div>
-  );
-}

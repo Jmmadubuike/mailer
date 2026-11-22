@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { SendableDomainOption } from "@/types/sending-domain";
 import { EmailComposer } from "@/components/editor/email-composer";
 import {
@@ -103,8 +104,9 @@ export function CampaignCreateForm({
       </div>
 
       <Section title="Sending identity">
-        <Field label="Sending domain">
+        <Field label="Sending domain" htmlFor="sending-domain">
           <select
+            id="sending-domain"
             value={sendingDomainId}
             onChange={(event) => setSendingDomainId(event.target.value)}
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500"
@@ -116,25 +118,40 @@ export function CampaignCreateForm({
               </option>
             ))}
           </select>
+          {domains.length === 0 && (
+            <p className="mt-2 text-sm text-amber-600">
+              No verified sending domains yet.{" "}
+              <Link
+                href="/dashboard/sending-domains"
+                className="font-medium underline"
+              >
+                Add and verify a domain
+              </Link>{" "}
+              first.
+            </p>
+          )}
         </Field>
-        <Field label="Sender name">
+        <Field label="Sender name" htmlFor="sender-name">
           <TextInput
             name="fromName"
+            id="sender-name"
             defaultValue={selectedDomain?.defaultSenderName ?? ""}
             required
           />
         </Field>
-        <Field label="Sender email">
+        <Field label="Sender email" htmlFor="sender-email">
           <TextInput
             name="fromEmail"
+            id="sender-email"
             type="email"
             defaultValue={defaultSender}
             required
           />
         </Field>
-        <Field label="Reply-to email">
+        <Field label="Reply-to email" htmlFor="reply-to">
           <TextInput
             name="replyTo"
+            id="reply-to"
             type="email"
             defaultValue={selectedDomain?.defaultReplyTo ?? ""}
           />
@@ -142,8 +159,9 @@ export function CampaignCreateForm({
       </Section>
 
       <Section title="Message">
-        <Field label="Start from a template">
+        <Field label="Start from a template" htmlFor="start-template">
           <select
+            id="start-template"
             defaultValue=""
             onChange={(event) => {
               const template = templates.find((t) => t.id === event.target.value);
@@ -166,19 +184,20 @@ export function CampaignCreateForm({
             ))}
           </select>
         </Field>
-        <Field label="Campaign name">
-          <TextInput name="name" required />
+        <Field label="Campaign name" htmlFor="campaign-name">
+          <TextInput name="name" id="campaign-name" required />
         </Field>
-        <Field label="Subject">
+        <Field label="Subject" htmlFor="subject">
           <TextInput
             name="subject"
+            id="subject"
             value={subject}
             onChange={setSubject}
             required
           />
         </Field>
-        <Field label="Preview text">
-          <TextInput name="previewText" />
+        <Field label="Preview text" htmlFor="preview-text">
+          <TextInput name="previewText" id="preview-text" />
         </Field>
         <Field label="HTML content">
           <EmailComposer initialHtml={htmlContent} onChange={setHtmlContent} />
@@ -270,9 +289,10 @@ export function CampaignCreateForm({
           ))}
         </div>
         {sendMode === "scheduled" && (
-          <Field label="Send at">
+          <Field label="Send at" htmlFor="scheduled-at">
             <TextInput
               name="scheduledAt"
+              id="scheduled-at"
               type="datetime-local"
               value={scheduledAt}
               onChange={(value) => setScheduledAt(value)}
@@ -283,7 +303,10 @@ export function CampaignCreateForm({
       </Section>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
           {error}
         </p>
       )}
@@ -324,14 +347,19 @@ function Section({
 
 function Field({
   label,
+  htmlFor,
   children,
 }: {
   label: string;
+  htmlFor?: string;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-slate-700">
+      <label
+        htmlFor={htmlFor}
+        className="mb-1 block text-sm font-medium text-slate-700"
+      >
         {label}
       </label>
       {children}
@@ -341,6 +369,7 @@ function Field({
 
 function TextInput({
   name,
+  id,
   type = "text",
   defaultValue,
   value,
@@ -348,6 +377,7 @@ function TextInput({
   required = false,
 }: {
   name: string;
+  id?: string;
   type?: string;
   defaultValue?: string;
   value?: string;
@@ -358,6 +388,7 @@ function TextInput({
     return (
       <input
         name={name}
+        id={id}
         type={type}
         required={required}
         value={value}
@@ -369,6 +400,7 @@ function TextInput({
   return (
     <input
       name={name}
+      id={id}
       type={type}
       required={required}
       defaultValue={defaultValue}

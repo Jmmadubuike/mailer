@@ -11,12 +11,13 @@ MongoDB via Mongoose 9. Collections:
 - `campaignrecipients` — one row per recipient with `sendingDomainId`,
   `providerMessageId`, and an `events` array for unique engagement counts.
 - `sendingdomains` — domain registry with encrypted API key fields.
-- `emailtemplates` — reusable templates.
 - `suppressions` — unsubscribe/complaint/bounce records.
 - `deliveryjobs` — durable delivery jobs with leases and idempotency keys.
 - `webhookevents` — deduplicated provider events.
 - `auditlogs` — administrative activity.
 - `applicationsettings` — non-secret platform settings.
+Email templates are defined in code at `src/modules/templates/catalog.ts`
+rather than stored in the database.
 
 Key indexes cover normalized email, status, memberships, campaign status,
 scheduled timestamps, provider message IDs, webhook event IDs, job status, and

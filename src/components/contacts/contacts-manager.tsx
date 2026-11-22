@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Toast } from "@/components/ui/toast";
+import { Dialog } from "@/components/ui/dialog";
 
 export interface ContactDTO {
   id: string;
@@ -28,6 +31,10 @@ export function ContactsManager({
   const [selected, setSelected] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ id?: string; bulk: boolean } | null>(
+    null,
+  );
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (pageNumber: number, search: string) => {
     const params = new URLSearchParams({
@@ -40,12 +47,6 @@ export function ContactsManager({
     setTotal(body.total);
   }, []);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   async function updateStatus(id: string, status: string) {
     await fetch(`/api/contacts/${id}`, {
       method: "PATCH",
@@ -56,25 +57,35 @@ export function ContactsManager({
     load(page, query);
   }
 
-  async function remove(id: string) {
-    await fetch(`/api/contacts/${id}`, { method: "DELETE" });
-    router.refresh();
-    load(page, query);
-    setToast("Contact deleted");
+  function remove(id: string) {
+    setConfirm({ id, bulk: false });
   }
 
-  async function bulkDelete() {
-    const response = await fetch("/api/contacts/bulk-delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selected }),
-    });
-    if (response.ok) {
-      setSelected([]);
-      router.refresh();
-      load(page, query);
-      setToast("Contacts deleted");
+  function bulkDelete() {
+    setConfirm({ bulk: true });
+  }
+
+  async function confirmedDelete() {
+    if (!confirm) return;
+    setBusy(true);
+    const response = confirm.bulk
+      ? await fetch("/api/contacts/bulk-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: selected }),
+        })
+      : await fetch(`/api/contacts/${confirm.id}`, { method: "DELETE" });
+    setBusy(false);
+    if (!response.ok) {
+      setConfirm(null);
+      setToast("Delete failed");
+      return;
     }
+    if (confirm.bulk) setSelected([]);
+    setConfirm(null);
+    router.refresh();
+    load(page, query);
+    setToast(confirm.bulk ? "Contacts deleted" : "Contact deleted");
   }
 
   async function exportCsv() {
@@ -99,7 +110,7 @@ export function ContactsManager({
             {total} contact{total === 1 ? "" : "s"} in the central database.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={exportCsv}
@@ -132,7 +143,7 @@ export function ContactsManager({
           setPage(1);
           load(1, query);
         }}
-        className="mt-6 flex gap-2"
+        className="mt-6 flex flex-wrap gap-2"
       >
         <input
           value={query}
@@ -148,7 +159,71 @@ export function ContactsManager({
         </button>
       </form>
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="mt-4 space-y-3 md:hidden">
+        {contacts.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+            No contacts found.
+          </div>
+        ) : (
+          contacts.map((contact) => (
+            <div
+              key={contact.id}
+              className="rounded-lg border border-slate-200 bg-white p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-slate-900">
+                    {contact.email}
+                  </p>
+                  <p className="truncate text-sm text-slate-600">
+                    {[contact.firstName, contact.lastName]
+                      .filter(Boolean)
+                      .join(" ") || "—"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {contact.tags.join(", ") || "No tags"}
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  aria-label={`Select ${contact.email}`}
+                  checked={selected.includes(contact.id)}
+                  onChange={(event) =>
+                    setSelected((current) =>
+                      event.target.checked
+                        ? [...current, contact.id]
+                        : current.filter((id) => id !== contact.id),
+                    )
+                  }
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <select
+                  aria-label="Status"
+                  value={contact.status}
+                  onChange={(event) =>
+                    updateStatus(contact.id, event.target.value)
+                  }
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 outline-none focus:border-indigo-500"
+                >
+                  <option value="subscribed">subscribed</option>
+                  <option value="unsubscribed">unsubscribed</option>
+                  <option value="suppressed">suppressed</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => remove(contact.id)}
+                  className="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="mt-4 hidden overflow-hidden rounded-lg border border-slate-200 bg-white md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -230,7 +305,7 @@ export function ContactsManager({
                       <button
                         type="button"
                         onClick={() => remove(contact.id)}
-                        className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                        className="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
                       >
                         Delete
                       </button>
@@ -279,11 +354,22 @@ export function ContactsManager({
         />
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirm !== null}
+        title={confirm?.bulk ? "Delete selected contacts?" : "Delete contact?"}
+        description={
+          confirm?.bulk
+            ? `This permanently deletes ${selected.length} contact(s).`
+            : "This permanently deletes the contact."
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={busy}
+        onConfirm={confirmedDelete}
+        onClose={() => setConfirm(null)}
+      />
+
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }
@@ -317,19 +403,13 @@ function CreateContactDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      onClick={onClose}
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-3 rounded-lg bg-white p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <Dialog open onClose={onClose} maxWidthClass="max-w-sm">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <h2 className="text-lg font-semibold text-slate-900">Add contact</h2>
         <input
           type="email"
           required
+          aria-label="Email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="Email"
@@ -337,12 +417,14 @@ function CreateContactDialog({
         />
         <input
           value={firstName}
+          aria-label="First name"
           onChange={(event) => setFirstName(event.target.value)}
           placeholder="First name"
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
         />
         <input
           value={lastName}
+          aria-label="Last name"
           onChange={(event) => setLastName(event.target.value)}
           placeholder="Last name"
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500"
@@ -368,6 +450,6 @@ function CreateContactDialog({
           </button>
         </div>
       </form>
-    </div>
+    </Dialog>
   );
 }

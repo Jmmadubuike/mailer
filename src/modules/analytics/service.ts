@@ -11,8 +11,8 @@ export async function getEngagementSeries(
 
   const [sent, opened, clicked] = await Promise.all([
     aggregateByDay(
-      { providerMessageId: { $type: "string" }, updatedAt: { $gte: start } },
-      "$updatedAt",
+      { sentAt: { $gte: start } },
+      "$sentAt",
     ),
     aggregateByDay(
       { events: "opened", openedAt: { $gte: start } },

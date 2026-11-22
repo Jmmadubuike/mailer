@@ -4,6 +4,8 @@ import { authorizeApi, isApiError } from "@/lib/auth/api";
 import { readJson } from "@/lib/api";
 import { USER_ROLES } from "@/models/User";
 import { deleteUser, updateUser } from "@/modules/users/service";
+import { AppError } from "@/lib/errors";
+import mongoose from "mongoose";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -22,21 +24,37 @@ export async function PATCH(request: Request, context: Context) {
   await connectDB();
 
   const { id } = await context.params;
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
   const parsed = updateSchema.safeParse(await readJson(request));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const user = await updateUser(id, parsed.data);
-  return NextResponse.json({
-    user: {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-    },
-  });
+  try {
+    const user = await updateUser(id, parsed.data);
+    return NextResponse.json({
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
+    });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(_request: Request, context: Context) {
@@ -45,13 +63,22 @@ export async function DELETE(_request: Request, context: Context) {
   await connectDB();
 
   const { id } = await context.params;
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
   try {
     await deleteUser(id, auth.session.sub);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to delete" },
-      { status: 409 },
+      { error: "Failed to delete" },
+      { status: 500 },
     );
   }
 }

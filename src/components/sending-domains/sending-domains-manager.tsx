@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Toast } from "@/components/ui/toast";
+import { Dialog as Modal } from "@/components/ui/dialog";
 import type {
   DomainStats,
   SendingDomainDTO,
@@ -59,12 +61,6 @@ export function SendingDomainsManager({
       .then((body) => setCombined(body.stats))
       .catch(() => setCombined(null));
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   async function run(
     key: string,
@@ -323,16 +319,11 @@ export function SendingDomainsManager({
         />
       )}
 
-      {toast && (
-        <div
-          className={cn(
-            "fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm font-medium text-white shadow-lg",
-            toast.kind === "success" ? "bg-emerald-600" : "bg-red-600",
-          )}
-        >
-          {toast.message}
-        </div>
-      )}
+      <Toast
+        message={toast?.message ?? null}
+        tone={toast?.kind === "error" ? "error" : "default"}
+        onDismiss={() => setToast(null)}
+      />
     </div>
   );
 }
@@ -349,7 +340,7 @@ function CombinedStats({ stats }: { stats: DomainStats }) {
   ];
 
   return (
-    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
       {items.map(([label, value]) => (
         <div
           key={label}
@@ -443,7 +434,7 @@ function ActionButton({
       disabled={busy}
       onClick={onClick}
       className={cn(
-        "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-60",
+        "rounded-md border px-3 py-2 text-xs font-medium transition-colors disabled:opacity-60",
         danger
           ? "border-red-200 text-red-700 hover:bg-red-50"
           : "border-slate-200 text-slate-700 hover:bg-slate-50",
@@ -746,17 +737,9 @@ function Dialog({
   onClose: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
+    <Modal open onClose={onClose} maxWidthClass="max-w-lg">
+      {children}
+    </Modal>
   );
 }
 

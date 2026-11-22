@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Toast } from "@/components/ui/toast";
 
 interface PlatformSettings {
   globalKillSwitch: boolean;
@@ -75,6 +76,7 @@ export function SettingsManager({
           <input
             type="number"
             min={0}
+            aria-label="Daily sending limit"
             disabled={!canEdit}
             value={settings.dailySendLimit}
             onChange={(event) =>
@@ -89,11 +91,7 @@ export function SettingsManager({
         </SettingRow>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

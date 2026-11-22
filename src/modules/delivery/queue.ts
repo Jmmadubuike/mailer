@@ -11,14 +11,21 @@ import {
   type ICampaignRecipient,
 } from "@/models/CampaignRecipient";
 import { Campaign } from "@/models/Campaign";
+import { Contact } from "@/models/Contact";
+import { Suppression } from "@/models/Suppression";
 import { SendingDomain } from "@/models/SendingDomain";
 import { assertSendableDomain } from "@/modules/sending-domains/service";
 import { sendThroughDomain } from "@/lib/resend/send";
 import { renderTemplate } from "@/modules/personalization/render";
 import { createUnsubscribeToken } from "@/modules/unsubscribe/token";
 import { sanitizeEmailHtml } from "@/lib/security/sanitize";
-import { assertSendingEnabled } from "@/modules/settings/service";
+import {
+  assertSendingEnabled,
+  releaseDailySend,
+  reserveDailySend,
+} from "@/modules/settings/service";
 import { htmlToText } from "@/lib/email/html-to-text";
+import { decideSuppressionOutcome } from "@/modules/delivery/suppression";
 
 const LEASE_MS = 5 * 60 * 1000;
 
@@ -26,6 +33,22 @@ export interface QueueRunResult {
   processed: number;
   sent: number;
   failed: number;
+  skipped: number;
+}
+
+async function recoverStaleJobs(): Promise<number> {
+  const result = await DeliveryJob.updateMany(
+    { status: "processing", leaseUntil: { $lt: new Date() } },
+    {
+      $set: {
+        status: "pending",
+        leaseUntil: null,
+        lockedAt: null,
+        workerRunId: null,
+      },
+    },
+  );
+  return result.modifiedCount ?? 0;
 }
 
 async function claimJobs(limit: number): Promise<IDeliveryJob[]> {
@@ -64,9 +87,11 @@ async function claimJobs(limit: number): Promise<IDeliveryJob[]> {
 export async function processQueue(
   limit = getEnv().WORKER_BATCH_SIZE,
 ): Promise<QueueRunResult> {
+  await recoverStaleJobs();
   const jobs = await claimJobs(limit);
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
   const affectedCampaigns = new Set<string>();
 
   for (const job of jobs) {
@@ -74,17 +99,20 @@ export async function processQueue(
     const outcome = await processJob(job);
     if (outcome === "sent") sent += 1;
     if (outcome === "failed") failed += 1;
+    if (outcome === "skipped") skipped += 1;
   }
 
   for (const campaignId of affectedCampaigns) {
     await finalizeCampaign(campaignId);
   }
 
-  return { processed: jobs.length, sent, failed };
+  return { processed: jobs.length, sent, failed, skipped };
 }
 
 async function finalizeCampaign(campaignId: string): Promise<void> {
-  const campaign = await Campaign.findById(campaignId).select("status").lean();
+  const campaign = await Campaign.findById(campaignId)
+    .select("status recipientCount")
+    .lean();
   if (!campaign || !["queued", "sending"].includes(campaign.status)) return;
 
   const pending = await DeliveryJob.countDocuments({
@@ -97,6 +125,14 @@ async function finalizeCampaign(campaignId: string): Promise<void> {
     campaignId,
     status: "failed",
   });
+
+  if ((campaign.recipientCount ?? 0) === 0) {
+    await Campaign.updateOne(
+      { _id: campaignId },
+      { $set: { status: "failed", completedAt: new Date() } },
+    );
+    return;
+  }
 
   await Campaign.updateOne(
     { _id: campaignId },
@@ -120,7 +156,7 @@ export async function finalizeStalledCampaigns(): Promise<number> {
   for (const campaign of active) {
     await finalizeCampaign(campaign._id.toString());
     const current = await Campaign.findById(campaign._id).select("status").lean();
-    if (current && ["sent", "partially_failed"].includes(current.status)) {
+    if (current && ["sent", "partially_failed", "failed"].includes(current.status)) {
       finalized += 1;
     }
   }
@@ -161,8 +197,9 @@ async function processJob(
   try {
     await assertSendableDomain(domainId, campaign.fromEmail);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Domain not sendable";
-    await failJob(job, recipient, message, "permanent");
+    const message =
+      error instanceof Error ? error.message : "Domain not sendable";
+    await permanentFailure(job, recipient, message);
     return "failed";
   }
 
@@ -171,7 +208,53 @@ async function processJob(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Sending is disabled";
-    await failJob(job, recipient, message, "retryable");
+    await retryableFailure(job, recipient, message);
+    return "failed";
+  }
+
+  // Authoritative suppression re-check immediately before submission.
+  try {
+    const contact = await Contact.findOne({ email: recipient.email })
+      .select("status")
+      .lean();
+    const suppression = await Suppression.findOne({
+      email: recipient.email,
+      scope: "all",
+    }).lean();
+    const decision = decideSuppressionOutcome({
+      contactStatus: contact?.status,
+      suppressionType: suppression?.type as
+        | "unsubscribe"
+        | "complaint"
+        | "bounce"
+        | undefined,
+    });
+    if (decision.skip) {
+      recipient.status = decision.recipientStatus ?? "suppressed";
+      recipient.error = decision.reason;
+      recipient.events = pushEvent(recipient.events, "suppressed");
+      await recipient.save();
+      await DeliveryJob.updateOne(
+        { _id: job._id },
+        { $set: { status: "skipped" }, $inc: { attempts: 1 } },
+      );
+      return "skipped";
+    }
+  } catch {
+    await retryableFailure(job, recipient, "Suppression check failed");
+    return "failed";
+  }
+
+  let reservedKey: string | undefined;
+  try {
+    const reservation = await reserveDailySend();
+    if (!reservation.ok) {
+      await retryableFailure(job, recipient, "Daily sending limit has been reached");
+      return "failed";
+    }
+    reservedKey = reservation.key;
+  } catch {
+    await retryableFailure(job, recipient, "Sending limit check failed");
     return "failed";
   }
 
@@ -206,11 +289,13 @@ async function processJob(
       "List-Unsubscribe": `<${unsubscribeUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
+    idempotencyKey: job.idempotencyKey,
   });
 
   if (result.ok) {
     recipient.providerMessageId = result.messageId;
     recipient.status = "sent";
+    recipient.sentAt = new Date();
     recipient.events = pushEvent(recipient.events, "sent");
     await recipient.save();
 
@@ -225,43 +310,55 @@ async function processJob(
     return "sent";
   }
 
+  await releaseDailySend(reservedKey);
+
   const errorMessage = result.error ?? "Delivery failed";
   const classification = classifyError(errorMessage);
-  const attempts = job.attempts + 1;
 
-  if (classification === "retryable" && attempts < job.maxAttempts) {
-    await DeliveryJob.updateOne(
-      { _id: job._id },
-      {
-        $set: {
-          status: "retry_pending",
-          attempts,
-          errorClass: "retryable",
-          lastError: errorMessage,
-          nextRetryAt: new Date(Date.now() + backoffMs(attempts)),
-        },
-      },
-    );
-    return "failed";
+  if (classification === "retryable") {
+    await retryableFailure(job, recipient, errorMessage);
+  } else {
+    await permanentFailure(job, recipient, errorMessage);
+    await markDomainCredentialInvalid(domainId, errorMessage);
   }
-
-  await failJob(job, recipient, errorMessage, classification);
-  await markDomainCredentialInvalid(domainId, errorMessage);
   return "failed";
 }
 
-async function failJob(
+async function retryableFailure(
   job: IDeliveryJob,
   recipient: ICampaignRecipient,
   message: string,
-  classification: "permanent" | "retryable",
+): Promise<void> {
+  const attempts = job.attempts + 1;
+  if (attempts >= job.maxAttempts) {
+    await permanentFailure(job, recipient, message);
+    return;
+  }
+  await DeliveryJob.updateOne(
+    { _id: job._id },
+    {
+      $set: {
+        status: "retry_pending",
+        attempts,
+        errorClass: "retryable",
+        lastError: message,
+        nextRetryAt: new Date(Date.now() + backoffMs(attempts)),
+      },
+    },
+  );
+}
+
+async function permanentFailure(
+  job: IDeliveryJob,
+  recipient: ICampaignRecipient,
+  message: string,
 ): Promise<void> {
   await DeliveryJob.updateOne(
     { _id: job._id },
     {
       $set: {
         status: "failed",
-        errorClass: classification,
+        errorClass: "permanent",
         lastError: message,
       },
       $inc: { attempts: 1 },

@@ -7,6 +7,7 @@ export const DELIVERY_JOB_STATUSES = [
   "failed",
   "retry_pending",
   "cancelled",
+  "skipped",
 ] as const;
 
 export type DeliveryJobStatus = (typeof DELIVERY_JOB_STATUSES)[number];

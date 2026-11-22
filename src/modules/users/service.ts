@@ -2,6 +2,7 @@ import "server-only";
 import { User, type IUser, type UserRole } from "@/models/User";
 import { hashPassword } from "@/lib/security/password";
 import { AppError } from "@/lib/errors";
+import { isLastActiveOwner } from "@/modules/users/ownership";
 
 export async function listUsers(): Promise<IUser[]> {
   return User.find().sort({ createdAt: 1 }).lean();
@@ -29,6 +30,17 @@ export async function updateUser(
   id: string,
   input: { name?: string; role?: UserRole; isActive?: boolean },
 ): Promise<IUser> {
+  const existing = await User.findById(id);
+  if (!existing) throw new AppError("User not found", 404);
+  if (input.role && input.role !== "owner" && existing.role === "owner") {
+    const ownerCount = await User.countDocuments({
+      role: "owner",
+      isActive: true,
+    });
+    if (isLastActiveOwner(ownerCount, true)) {
+      throw new AppError("You cannot demote the last organization owner", 409);
+    }
+  }
   const user = await User.findByIdAndUpdate(id, { $set: input }, { new: true });
   if (!user) throw new AppError("User not found", 404);
   return user;
@@ -38,8 +50,18 @@ export async function deleteUser(id: string, actorId: string): Promise<void> {
   if (id === actorId) {
     throw new AppError("You cannot delete your own account", 409);
   }
-  const user = await User.findByIdAndDelete(id);
+  const user = await User.findById(id);
   if (!user) throw new AppError("User not found", 404);
+  if (user.role === "owner") {
+    const ownerCount = await User.countDocuments({
+      role: "owner",
+      isActive: true,
+    });
+    if (isLastActiveOwner(ownerCount, true)) {
+      throw new AppError("You cannot remove the last organization owner", 409);
+    }
+  }
+  await User.findByIdAndDelete(id);
 }
 
 export async function setUserPassword(id: string, password: string): Promise<void> {

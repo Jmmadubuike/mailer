@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Toast } from "@/components/ui/toast";
+import { Dialog } from "@/components/ui/dialog";
 
 export function CampaignActions({
   campaignId,
@@ -168,15 +170,8 @@ export function CampaignActions({
       )}
 
       {testing && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-          onClick={() => setTesting(false)}
-        >
-          <form
-            onSubmit={sendTest}
-            className="w-full max-w-sm space-y-3 rounded-lg bg-white p-6 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
-          >
+        <Dialog open onClose={() => setTesting(false)} maxWidthClass="max-w-sm">
+          <form onSubmit={sendTest} className="space-y-3">
             <h2 className="text-lg font-semibold text-slate-900">Send test</h2>
             <input
               type="email"
@@ -202,14 +197,10 @@ export function CampaignActions({
               </button>
             </div>
           </form>
-        </div>
+        </Dialog>
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

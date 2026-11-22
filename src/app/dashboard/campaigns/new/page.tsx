@@ -31,7 +31,7 @@ export default async function NewCampaignPage() {
         name: segment.name,
       }))}
       templates={templates.map((template) => ({
-        id: template._id.toString(),
+        id: template.id,
         name: template.name,
         subject: template.subject,
         htmlContent: template.htmlContent,

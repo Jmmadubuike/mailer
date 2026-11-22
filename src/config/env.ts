@@ -22,6 +22,8 @@ const envSchema = z.object({
   EMAIL_FROM_NAME: z.string().default("Mailer"),
   EMAIL_FROM_ADDRESS: z.string().email().optional(),
   EMAIL_REPLY_TO: z.string().email().optional(),
+  APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
+  STAGING_RECIPIENT_ALLOWLIST: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -11,6 +11,7 @@ export function PasswordInput({
   minLength,
   placeholder,
   autoComplete,
+  ariaLabel,
   className,
 }: {
   value: string;
@@ -20,6 +21,7 @@ export function PasswordInput({
   minLength?: number;
   placeholder?: string;
   autoComplete?: string;
+  ariaLabel?: string;
   className?: string;
 }) {
   const [visible, setVisible] = useState(false);
@@ -33,6 +35,7 @@ export function PasswordInput({
         minLength={minLength}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        aria-label={ariaLabel}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className={cn(

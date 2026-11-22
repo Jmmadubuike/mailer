@@ -351,6 +351,8 @@ export async function getDomainStats(domainId?: string): Promise<DomainStats> {
     clicked: Array<{ count: number }>;
     unsubscribed: Array<{ count: number }>;
     failed: Array<{ count: number }>;
+    totalOpens: Array<{ count: number }>;
+    totalClicks: Array<{ count: number }>;
   }>([
     ...(domainId && mongoose.isValidObjectId(domainId)
       ? [{ $match: match }]
@@ -378,6 +380,12 @@ export async function getDomainStats(domainId?: string): Promise<DomainStats> {
           { $count: "count" },
         ],
         failed: [{ $match: { events: "failed" } }, { $count: "count" }],
+        totalOpens: [
+          { $group: { _id: null, count: { $sum: "$openCount" } } },
+        ],
+        totalClicks: [
+          { $group: { _id: null, count: { $sum: "$clickCount" } } },
+        ],
       },
     },
   ]);
@@ -391,6 +399,8 @@ export async function getDomainStats(domainId?: string): Promise<DomainStats> {
   const clicks = result?.clicked[0]?.count ?? 0;
   const unsubscribes = result?.unsubscribed[0]?.count ?? 0;
   const failed = result?.failed[0]?.count ?? 0;
+  const totalOpens = result?.totalOpens[0]?.count ?? 0;
+  const totalClicks = result?.totalClicks[0]?.count ?? 0;
 
   const domain = domainId ? await SendingDomain.findById(domainId).lean() : null;
 
@@ -407,6 +417,8 @@ export async function getDomainStats(domainId?: string): Promise<DomainStats> {
     complaints,
     opens,
     clicks,
+    totalOpens,
+    totalClicks,
     unsubscribes,
     failed,
     deliveryRate: rate(delivered, sent),

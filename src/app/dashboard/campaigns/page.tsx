@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/authorize";
 import { listCampaigns } from "@/modules/campaigns/service";
 import { SendingDomain } from "@/models/SendingDomain";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,40 @@ export default async function CampaignsPage() {
         </Link>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="mt-6 space-y-3 md:hidden">
+        {campaigns.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+            No campaigns yet.
+          </div>
+        ) : (
+          campaigns.map((campaign) => (
+            <Link
+              key={campaign._id.toString()}
+              href={`/dashboard/campaigns/${campaign._id.toString()}`}
+              className="block rounded-lg border border-slate-200 bg-white p-4"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate font-medium text-slate-900">
+                  {campaign.name}
+                </p>
+                <Badge tone={statusTone(campaign.status)}>
+                  {campaign.status}
+                </Badge>
+              </div>
+              <p className="mt-1 truncate text-sm text-slate-600">
+                {campaign.subject}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                {domainNames.get(campaign.sendingDomainId.toString()) ?? "—"} ·{" "}
+                {campaign.recipientCount} recipients ·{" "}
+                {campaign.createdAt.toISOString().slice(0, 10)}
+              </p>
+            </Link>
+          ))
+        )}
+      </div>
+
+      <div className="mt-6 hidden overflow-hidden rounded-lg border border-slate-200 bg-white md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -82,9 +116,9 @@ export default async function CampaignsPage() {
                         "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                      <Badge tone={statusTone(campaign.status)}>
                         {campaign.status}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {campaign.recipientCount}
@@ -101,4 +135,13 @@ export default async function CampaignsPage() {
       </div>
     </div>
   );
+}
+
+function statusTone(status: string): "neutral" | "success" | "danger" | "warning" {
+  if (status === "sent") return "success";
+  if (status === "failed") return "danger";
+  if (["preparing", "scheduled", "queued", "sending", "partially_failed"].includes(status)) {
+    return "warning";
+  }
+  return "neutral";
 }

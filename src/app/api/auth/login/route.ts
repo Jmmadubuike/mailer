@@ -6,6 +6,11 @@ import { createSession } from "@/lib/auth/session";
 import { logAudit } from "@/lib/audit";
 import { readJson } from "@/lib/api";
 import { AppError } from "@/lib/errors";
+import {
+  clearLoginFailures,
+  isLoginLocked,
+  recordLoginFailure,
+} from "@/lib/auth/throttle";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -13,13 +18,10 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-const attempts = new Map<string, { count: number; lockedUntil: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000;
-
 export async function POST(request: Request) {
   await connectDB();
 
+  try {
   const parsed = loginSchema.safeParse(await readJson(request));
   if (!parsed.success) {
     return NextResponse.json(
@@ -29,10 +31,8 @@ export async function POST(request: Request) {
   }
 
   const { email, password } = parsed.data;
-  const now = Date.now();
-  const record = attempts.get(email);
 
-  if (record && record.lockedUntil > now) {
+  if (await isLoginLocked(email)) {
     return NextResponse.json(
       { error: "Too many failed attempts. Try again later." },
       { status: 429 },
@@ -43,15 +43,11 @@ export async function POST(request: Request) {
   const passwordOk = user ? await verifyPassword(password, user.passwordHash) : false;
 
   if (!user || !passwordOk || !user.isActive) {
-    const count = record ? record.count + 1 : 1;
-    const lockedUntil =
-      count >= MAX_ATTEMPTS ? now + WINDOW_MS : record?.lockedUntil ?? 0;
-    attempts.set(email, { count, lockedUntil });
-
+    await recordLoginFailure(email);
     throw new AppError("Invalid email or password", 401);
   }
 
-  attempts.delete(email);
+  await clearLoginFailures(email);
   await User.findByIdAndUpdate(user._id, { lastLoginAt: new Date() });
 
   await createSession({
@@ -73,4 +69,13 @@ export async function POST(request: Request) {
     ok: true,
     user: { name: user.name, email: user.email, role: user.role },
   });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status },
+      );
+    }
+    throw error;
+  }
 }

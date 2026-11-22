@@ -46,6 +46,8 @@ export interface DomainStats {
   complaints: number;
   opens: number;
   clicks: number;
+  totalOpens: number;
+  totalClicks: number;
   unsubscribes: number;
   failed: number;
   deliveryRate: number;

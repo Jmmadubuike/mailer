@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/db/client";
 import { authorizeApi, isApiError } from "@/lib/auth/api";
 import { Suppression } from "@/models/Suppression";
 import { logAudit } from "@/lib/audit";
-import { AppError } from "@/lib/errors";
+import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,29 @@ export async function DELETE(_request: Request, context: Context) {
   await connectDB();
 
   const { id } = await context.params;
-  const suppression = await Suppression.findByIdAndDelete(id);
-  if (!suppression) throw new AppError("Suppression record not found", 404);
+  if (!mongoose.isValidObjectId(id)) {
+    return NextResponse.json(
+      { error: "Suppression record not found" },
+      { status: 404 },
+    );
+  }
+  const suppression = await Suppression.findById(id);
+  if (!suppression) {
+    return NextResponse.json(
+      { error: "Suppression record not found" },
+      { status: 404 },
+    );
+  }
+  if (suppression.type === "bounce" || suppression.type === "complaint") {
+    return NextResponse.json(
+      {
+        error:
+          "Bounce and complaint suppressions cannot be removed to protect sender reputation",
+      },
+      { status: 409 },
+    );
+  }
+  await Suppression.findByIdAndDelete(id);
 
   await logAudit({
     actorEmail: auth.session.email,

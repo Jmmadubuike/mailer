@@ -1,11 +1,24 @@
 import Link from "next/link";
+import dynamicImport from "next/dynamic";
 import { connectDB } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/authorize";
 import { SendingDomain } from "@/models/SendingDomain";
 import { Campaign } from "@/models/Campaign";
 import { AuditLog } from "@/models/AuditLog";
 import { getEngagementSeries } from "@/modules/analytics/service";
-import { EngagementChart } from "@/components/dashboard/engagement-chart";
+import { Stat } from "@/components/ui/stat";
+
+const EngagementChart = dynamicImport(
+  () =>
+    import("@/components/dashboard/engagement-chart").then(
+      (mod) => mod.EngagementChart,
+    ),
+  {
+    loading: () => (
+      <div className="h-72 w-full animate-pulse rounded bg-slate-100" />
+    ),
+  },
+);
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +45,9 @@ export default async function DashboardPage() {
       </p>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Sending domains" value={String(domainCount)} />
-        <StatCard label="Active domains" value={String(activeDomainCount)} />
-        <StatCard label="Campaigns" value={String(campaignCount)} />
+        <Stat label="Sending domains" value={String(domainCount)} />
+        <Stat label="Active domains" value={String(activeDomainCount)} />
+        <Stat label="Campaigns" value={String(campaignCount)} />
       </div>
 
       <div className="mt-8 rounded-lg border border-slate-200 bg-white p-6">
@@ -123,11 +136,3 @@ export default async function DashboardPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card-hover rounded-lg border border-slate-200 bg-white p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
-    </div>
-  );
-}

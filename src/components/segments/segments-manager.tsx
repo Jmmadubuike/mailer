@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Toast } from "@/components/ui/toast";
+import { Dialog } from "@/components/ui/dialog";
 import {
   SEGMENT_OPERATORS,
   type SegmentCondition,
@@ -105,7 +107,7 @@ export function SegmentsManager({ segments }: { segments: SegmentDTO[] }) {
                         <button
                           type="button"
                           onClick={() => remove(segment.id)}
-                          className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                          className="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
                         >
                           Delete
                         </button>
@@ -131,11 +133,7 @@ export function SegmentsManager({ segments }: { segments: SegmentDTO[] }) {
         />
       )}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }
@@ -152,7 +150,7 @@ function SegmentEstimateButton({
     <button
       type="button"
       onClick={async () => setCount(await estimate(root))}
-      className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+      className="rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
     >
       {count === null ? "Estimate" : `${count} recipient${count === 1 ? "" : "s"}`}
     </button>
@@ -198,15 +196,8 @@ function CreateSegmentDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      onClick={onClose}
-    >
-      <form
-        onSubmit={handleSubmit}
-        className="max-h-[90vh] w-full max-w-2xl space-y-4 overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
-        onClick={(event) => event.stopPropagation()}
-      >
+    <Dialog open onClose={onClose} maxWidthClass="max-w-2xl">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-900">New segment</h2>
         <input
           value={name}
@@ -239,7 +230,7 @@ function CreateSegmentDialog({
 
         <div className="space-y-2">
           {rows.map((row, index) => (
-            <div key={index} className="flex gap-2">
+            <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <input
                 list="segment-fields"
                 value={row.field}
@@ -251,7 +242,8 @@ function CreateSegmentDialog({
                   )
                 }
                 placeholder="field"
-                className="w-44 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500"
+                aria-label="Field"
+                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500 sm:w-44"
               />
               <select
                 value={row.operator}
@@ -264,7 +256,8 @@ function CreateSegmentDialog({
                     ),
                   )
                 }
-                className="w-40 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500"
+                aria-label="Operator"
+                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500 sm:w-40"
               >
                 {SEGMENT_OPERATORS.map((operator) => (
                   <option key={operator} value={operator}>
@@ -282,14 +275,15 @@ function CreateSegmentDialog({
                   )
                 }
                 placeholder="value"
-                className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500"
+                aria-label="Value"
+                className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-indigo-500 sm:flex-1"
               />
               <button
                 type="button"
                 onClick={() =>
                   setRows((current) => current.filter((_, i) => i !== index))
                 }
-                className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                className="w-fit rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
               >
                 ×
               </button>
@@ -347,6 +341,6 @@ function CreateSegmentDialog({
           </button>
         </div>
       </form>
-    </div>
+    </Dialog>
   );
 }

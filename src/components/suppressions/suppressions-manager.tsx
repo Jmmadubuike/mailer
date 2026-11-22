@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Toast } from "@/components/ui/toast";
 
 export interface SuppressionDTO {
   id: string;
@@ -23,6 +25,8 @@ export function SuppressionsManager({
   const [suppressions, setSuppressions] =
     useState<SuppressionDTO[]>(initialSuppressions);
   const [toast, setToast] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function load() {
     const response = await fetch("/api/suppressions");
@@ -30,14 +34,22 @@ export function SuppressionsManager({
     setSuppressions(body.suppressions);
   }
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  function remove(id: string) {
+    setConfirmId(id);
+  }
 
-  async function remove(id: string) {
-    await fetch(`/api/suppressions/${id}`, { method: "DELETE" });
+  async function confirmedRemove() {
+    if (!confirmId) return;
+    setBusy(true);
+    const response = await fetch(`/api/suppressions/${confirmId}`, {
+      method: "DELETE",
+    });
+    setBusy(false);
+    setConfirmId(null);
+    if (!response.ok) {
+      setToast("Remove failed");
+      return;
+    }
     router.refresh();
     load();
     setToast("Suppression removed");
@@ -101,7 +113,7 @@ export function SuppressionsManager({
                         <button
                           type="button"
                           onClick={() => remove(suppression.id)}
-                          className="rounded-md border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+                          className="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
                         >
                           Remove
                         </button>
@@ -115,11 +127,18 @@ export function SuppressionsManager({
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 rounded-md bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmId !== null}
+        title="Remove suppression?"
+        description="This re-allows the address to receive future campaigns."
+        confirmLabel="Remove"
+        destructive
+        busy={busy}
+        onConfirm={confirmedRemove}
+        onClose={() => setConfirmId(null)}
+      />
+
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

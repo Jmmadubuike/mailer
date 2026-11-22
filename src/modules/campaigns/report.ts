@@ -14,6 +14,8 @@ export interface CampaignStats {
   clicks: number;
   unsubscribes: number;
   failed: number;
+  totalOpens: number;
+  totalClicks: number;
   deliveryRate: number;
   openRate: number;
   clickRate: number;
@@ -23,6 +25,9 @@ export async function getCampaignReport(campaignId: string): Promise<{
   campaign: ICampaign;
   stats: CampaignStats;
 }> {
+  if (!mongoose.isValidObjectId(campaignId)) {
+    throw new AppError("Campaign not found", 404);
+  }
   const campaign = await Campaign.findById(campaignId).lean();
   if (!campaign) throw new AppError("Campaign not found", 404);
 
@@ -36,6 +41,8 @@ export async function getCampaignReport(campaignId: string): Promise<{
     clicked: Array<{ count: number }>;
     unsubscribed: Array<{ count: number }>;
     failed: Array<{ count: number }>;
+    totalOpens: Array<{ count: number }>;
+    totalClicks: Array<{ count: number }>;
   }>([
     { $match: { campaignId: new mongoose.Types.ObjectId(campaignId) } },
     {
@@ -58,6 +65,12 @@ export async function getCampaignReport(campaignId: string): Promise<{
           { $count: "count" },
         ],
         failed: [{ $match: { events: "failed" } }, { $count: "count" }],
+        totalOpens: [
+          { $group: { _id: null, count: { $sum: "$openCount" } } },
+        ],
+        totalClicks: [
+          { $group: { _id: null, count: { $sum: "$clickCount" } } },
+        ],
       },
     },
   ]);
@@ -71,6 +84,8 @@ export async function getCampaignReport(campaignId: string): Promise<{
   const clicks = result?.clicked[0]?.count ?? 0;
   const unsubscribes = result?.unsubscribed[0]?.count ?? 0;
   const failed = result?.failed[0]?.count ?? 0;
+  const totalOpens = result?.totalOpens[0]?.count ?? 0;
+  const totalClicks = result?.totalClicks[0]?.count ?? 0;
 
   const rate = (numerator: number, denominator: number) =>
     denominator > 0 ? Number((numerator / denominator).toFixed(4)) : 0;
@@ -87,6 +102,8 @@ export async function getCampaignReport(campaignId: string): Promise<{
       clicks,
       unsubscribes,
       failed,
+      totalOpens,
+      totalClicks,
       deliveryRate: rate(delivered, sent),
       openRate: rate(opens, delivered),
       clickRate: rate(clicks, delivered),

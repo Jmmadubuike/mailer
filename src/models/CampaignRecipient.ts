@@ -10,6 +10,7 @@ export const RECIPIENT_STATUSES = [
   "clicked",
   "unsubscribed",
   "failed",
+  "suppressed",
 ] as const;
 
 export type RecipientStatus = (typeof RECIPIENT_STATUSES)[number];
@@ -28,6 +29,9 @@ export interface ICampaignRecipient {
   openedAt?: Date;
   clickedAt?: Date;
   error?: string;
+  sentAt?: Date;
+  openCount: number;
+  clickCount: number;
   createdAt: Date;
   updatedAt: Date;
   save(): Promise<ICampaignRecipient>;
@@ -62,6 +66,9 @@ const campaignRecipientSchema = new Schema<ICampaignRecipient>(
     openedAt: { type: Date },
     clickedAt: { type: Date },
     error: { type: String },
+    sentAt: { type: Date, index: true },
+    openCount: { type: Number, default: 0 },
+    clickCount: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
