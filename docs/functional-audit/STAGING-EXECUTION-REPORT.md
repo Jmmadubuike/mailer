@@ -74,6 +74,36 @@ real account. The platform is not ready for a production-readiness review until
 the staging prerequisites are provisioned and the 12-test checklist is executed
 against them.
 
+## Live validation update (after provisioning)
+
+- TEST 1 — Real Resend webhooks: PASS. Real `email.sent` and `email.delivered`
+  events arrived, were signature-verified, deduplicated, and reconciled into
+  recipient records (`status: delivered`, `events: [sent, delivered]`). Two
+  defects were found and fixed (see STAGING-ISSUES-AND-RESOLUTIONS.md):
+  Mongoose update pipeline option missing, and system-actor audit `actorId`
+  casting.
+- TEST 2 — Multi-recipient campaign: PASS (single batch). 3 controlled
+  allow-listed recipients were eligible, queued, sent, and delivered; no
+  duplicates, omissions, or failures; campaign status `sent`, recipientCount 3,
+  3 unique provider message ids. Multi-batch (>1) was NOT TESTED because the
+  operator overrode the recipient count to 3 (< WORKER_BATCH_SIZE).
+- Quota reconciliation: NOT TESTED (daily limit is unset/0, so no reservation
+  counter is exercised).
+- Opened/clicked reconciliation: NOT TESTED (no opens/clicks occurred).
+
+## Reply-To + quota validation update
+
+- Reply-To: PASS. Precedence fixed and verified at the provider
+  (`reply_to: [jmmadubuike@gmail.com]`, distinct from From).
+- Finite daily quota: PASS. With `dailySendLimit=2`, a 3-recipient campaign sent
+  2 and held 1 as a retryable pending job (reservation over-limit reverted);
+  campaign was not marked sent while a recipient remained unprocessed. Limit was
+  reset to 0 afterwards.
+- Remaining: open/click reconciliation (needs recipient opens/clicks), true
+  multi-batch >100 (needs >100 authorized recipients; allow-list currently has
+  3), concurrent quota (parallel workers not exercised), crash/lease recovery,
+  provider-timeout idempotency, and second-domain credential isolation.
+
 ## Remaining limitations
 
 As documented in STAGING-ENVIRONMENT-AND-ROLLBACK.md and

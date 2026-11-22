@@ -26,6 +26,21 @@ Not executed. No staging Resend account/domain, webhook secret, or controlled
 staging recipients were available. No emails were sent, no domains were
 registered, and no database records were created or modified during this run.
 
+## Live webhook + batch evidence (after provisioning)
+
+- Webhook events stored and reconciled in the staging database:
+  `email.sent` x4, `email.delivered` x4 (1 smoke + 3 batch).
+- 3-recipient campaign `Staging Multi-Batch Reliability Test`: dispatched=1,
+  processed=3, sent=3, failed=0, skipped=0; final campaign status `sent`;
+  recipients all `delivered` with unique provider message ids.
+- Invalid-signature POST to the webhook endpoint returns 401
+  `{"error":"Invalid signature"}`.
+- Reply-To provider evidence: `emails.get` →
+  `{"from":"Mailer Staging <hello@mail.josephmmadubuike.com>","reply_to":["jmmadubuike@gmail.com"]}`.
+- Quota evidence: `dailySendLimit=2`, scheduler run →
+  `{"dispatched":1,"processed":3,"sent":2,"failed":1,"skipped":0}`; 2 recipients
+  `delivered`, 1 `pending`.
+
 ## Evidence references
 
 - Environment validation output captured at execution start (branch, commit,
