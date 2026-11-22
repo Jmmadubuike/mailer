@@ -1,6 +1,8 @@
 import "server-only";
 import { getClientForSendingDomain } from "@/lib/resend/client";
 import { assertStagingSendAllowed } from "@/lib/staging/guard";
+import { getEnv } from "@/config/env";
+import { resolveReplyTo } from "@/lib/resend/reply-to";
 
 export interface SendThroughDomainInput {
   domainId: string;
@@ -38,7 +40,11 @@ export async function sendThroughDomain(
     subject: input.subject,
     html: input.html,
     text: input.text,
-    replyTo: input.replyTo ?? domain.defaultReplyTo,
+    replyTo: resolveReplyTo({
+      message: input.replyTo,
+      domain: domain.defaultReplyTo,
+      global: getEnv().EMAIL_REPLY_TO,
+    }),
     headers: input.headers,
     idempotencyKey: input.idempotencyKey,
   } as Parameters<typeof client.emails.send>[0] & {
