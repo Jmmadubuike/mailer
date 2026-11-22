@@ -24,6 +24,8 @@ const envSchema = z.object({
   EMAIL_REPLY_TO: z.string().email().optional(),
   APP_ENV: z.enum(["development", "staging", "production"]).default("development"),
   STAGING_RECIPIENT_ALLOWLIST: z.string().optional(),
+  STAGING_DATABASE_URL: z.string().optional(),
+  STAGING_RESEND_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -41,6 +43,11 @@ export function getEnv(): Env {
     throw new Error(`Invalid environment configuration: ${missing}`);
   }
 
-  cached = parsed.data;
+  const env = parsed.data;
+  if (env.APP_ENV === "staging") {
+    env.DATABASE_URL = env.STAGING_DATABASE_URL ?? env.DATABASE_URL;
+    env.RESEND_API_KEY = env.STAGING_RESEND_API_KEY ?? env.RESEND_API_KEY;
+  }
+  cached = env;
   return cached;
 }
