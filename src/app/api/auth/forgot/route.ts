@@ -7,6 +7,7 @@ import { User } from "@/models/User";
 import { sendThroughDomain } from "@/lib/resend/send";
 import { SendingDomain } from "@/models/SendingDomain";
 import { z } from "zod";
+import { transactionalLayout } from "@/lib/email/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,12 @@ async function sendResetEmail(to: string, resetUrl: string): Promise<void> {
     domainId: domain._id.toString(),
     to,
     subject: "Reset your password",
-    html: `<p>Reset your password by visiting <a href="${resetUrl}">${resetUrl}</a>. This link expires in one hour.</p>`,
+    html: transactionalLayout({
+      title: "Reset your password",
+      bodyHtml:
+        '<p style="color:#1f2937;font-size:15px;line-height:1.65;margin:0">Reset your password by clicking the button below. This link expires in one hour.</p>',
+      cta: { label: "Reset password", href: resetUrl },
+    }),
+    text: `Reset your password: ${resetUrl}\n\nThis link expires in one hour.`,
   });
 }

@@ -30,9 +30,13 @@ export async function sendThroughDomain(
 
   const { client, domain } = await getClientForSendingDomain(input.domainId);
 
-  const fromName = input.fromName ?? domain.defaultSenderName ?? domain.name;
+  const fromName =
+    input.fromName ?? domain.defaultSenderName ?? getEnv().EMAIL_FROM_NAME;
   const fromEmail =
-    input.fromEmail ?? domain.defaultSenderAddress ?? `mail@${domain.domain}`;
+    input.fromEmail ??
+    domain.defaultSenderAddress ??
+    getEnv().EMAIL_FROM_ADDRESS ??
+    `mail@${domain.domain}`;
 
   const { data, error } = await client.emails.send({
     from: `${fromName} <${fromEmail}>`,
