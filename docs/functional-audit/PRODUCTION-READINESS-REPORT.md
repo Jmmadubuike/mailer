@@ -33,7 +33,7 @@
 - Delivery, multi-domain credential isolation, suppression, webhook
   verification/dedup, Reply-To, finite quota accounting, and branded rendering
   were validated in the isolated staging environment
-  (`mailer.josephmmadubuike.com`).
+  (`mailer.example.com`).
 - Remaining unvalidated failure-mode tests: >100-recipient multi-batch, worker
   crash/lease recovery, provider-timeout idempotency, and concurrent quota —
   these require additional authorized recipients/infrastructure.
@@ -41,6 +41,6 @@
 ## Decision
 
 Production has been deployed and one controlled smoke email verified. The
-platform is live at `https://mailer.josephmmadubuike.com` but currently shares
+platform is live at `https://mailer.example.com` but currently shares
 the staging database and Resend account; establish dedicated production
 infrastructure before sending to real audiences.

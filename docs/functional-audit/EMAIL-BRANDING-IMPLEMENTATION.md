@@ -23,8 +23,8 @@
 A campaign sent from the Newsletter template was fetched via Resend
 `emails.get`:
 
-- `from`: `Mailer <hello@mail.josephmmadubuike.com>`
-- `reply_to`: `[jmmadubuike@gmail.com]`
+- `from`: `Mailer <hello@mail.example.com>`
+- `reply_to`: `[owner@example.com]`
 - subject personalized (`{{first_name}}` resolved)
 - brand wordmark present; no placeholder brand, no fabricated address, and no
   unresolved `{{...}}` tokens in the delivered HTML.

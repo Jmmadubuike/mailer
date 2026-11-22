@@ -4,19 +4,19 @@
 
 - Target: Vercel Production environment, project `mailer`.
 - Command: `vercel deploy --prod --yes` from the reviewed `staging` branch.
-- Production deployment: `https://mailer-3d31mu64a-jmmadubuike.vercel.app`
-  (aliased `https://mailer-chi-lilac.vercel.app`); custom domain
-  `https://mailer.josephmmadubuike.com` serves production.
+- Production deployment: `https://mailer-preview.example.vercel.app`
+  (aliased `https://mailer-prod.example.vercel.app`); custom domain
+  `https://mailer.example.com` serves production.
 
 ## Configuration (per operator instruction to reuse staging resources)
 
 - Database: the staging MongoDB Atlas database (`mailer_staging`) is shared with
   production. NO dedicated production database was provisioned.
 - Resend: the staging Resend account, sending domain
-  `mail.josephmmadubuike.com`, and webhook secret are shared with production.
+  `mail.example.com`, and webhook secret are shared with production.
 - `APP_ENV=production` (so the staging recipient allow-list does not apply).
-- Sender identity: `Mailer <hello@mail.josephmmadubuike.com>`, Reply-To
-  `jmmadubuike@gmail.com`.
+- Sender identity: `Mailer <hello@mail.example.com>`, Reply-To
+  `owner@example.com`.
 
 ## Verification
 
@@ -24,10 +24,10 @@
 - Production webhook endpoint rejects a bad signature with
   `{"error":"Invalid signature"}` (secret configured and verification active).
 - Production smoke test: campaign `Production Smoke Test` dispatched and sent;
-  recipient `jmmadubuike@gmail.com` recorded `delivered`, provider message id
+  recipient `owner@example.com` recorded `delivered`, provider message id
   `01a20299-b3c0-70d5-928c-d7794f7c2b80`.
 - Provider evidence via Resend `emails.get`: `from: Mailer
-  <hello@mail.josephmmadubuike.com>`, `reply_to: [jmmadubuike@gmail.com]`,
+  <hello@mail.example.com>`, `reply_to: [owner@example.com]`,
   brand wordmark present, no placeholder brand, no raw template tokens.
 
 ## Important caveat

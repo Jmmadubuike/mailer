@@ -94,7 +94,7 @@ against them.
 ## Reply-To + quota validation update
 
 - Reply-To: PASS. Precedence fixed and verified at the provider
-  (`reply_to: [jmmadubuike@gmail.com]`, distinct from From).
+  (`reply_to: [owner@example.com]`, distinct from From).
 - Finite daily quota: PASS. With `dailySendLimit=2`, a 3-recipient campaign sent
   2 and held 1 as a retryable pending job (reservation over-limit reverted);
   campaign was not marked sent while a recipient remained unprocessed. Limit was

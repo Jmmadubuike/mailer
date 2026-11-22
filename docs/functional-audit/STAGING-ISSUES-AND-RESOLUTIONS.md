@@ -30,14 +30,14 @@ Both fixes are committed on `staging` and deployed; regression suite passes
 - Root cause: the global `EMAIL_REPLY_TO` environment variable was defined in
   `src/config/env.ts` but never read by the send path. Reply-To resolved only as
   `campaign.replyTo ?? domain.defaultReplyTo`, and the staging
-  `mail.josephmmadubuike.com` domain's `defaultReplyTo` had been set equal to
+  `mail.example.com` domain's `defaultReplyTo` had been set equal to
   its From address, so the operator's intended distinct Reply-To never applied.
 - Correction: added `resolveReplyTo()` precedence
   (message > domain default > global `EMAIL_REPLY_TO`) in
   `src/lib/resend/send.ts`; set the staging domain `defaultReplyTo` and Vercel
-  `EMAIL_REPLY_TO` to `jmmadubuike@gmail.com`.
+  `EMAIL_REPLY_TO` to `owner@example.com`.
 - Verification (provider): Resend `emails.get` for the test message returned
-  `from: hello@mail.josephmmadubuike.com`, `reply_to: [jmmadubuike@gmail.com]`.
+  `from: hello@mail.example.com`, `reply_to: [owner@example.com]`.
 - Tests: `src/lib/resend/reply-to.test.ts` (precedence + missing fallback).
 
 ## Issues found during the run

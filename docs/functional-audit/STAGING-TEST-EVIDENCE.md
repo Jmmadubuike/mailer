@@ -36,7 +36,7 @@ registered, and no database records were created or modified during this run.
 - Invalid-signature POST to the webhook endpoint returns 401
   `{"error":"Invalid signature"}`.
 - Reply-To provider evidence: `emails.get` →
-  `{"from":"Mailer Staging <hello@mail.josephmmadubuike.com>","reply_to":["jmmadubuike@gmail.com"]}`.
+  `{"from":"Mailer Staging <hello@mail.example.com>","reply_to":["owner@example.com"]}`.
 - Quota evidence: `dailySendLimit=2`, scheduler run →
   `{"dispatched":1,"processed":3,"sent":2,"failed":1,"skipped":0}`; 2 recipients
   `delivered`, 1 `pending`.
