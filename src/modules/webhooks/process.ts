@@ -64,6 +64,7 @@ async function applyEmailEvent(
   await CampaignRecipient.updateOne(
     { _id: recipient._id },
     buildEventPipeline(event),
+    { updatePipeline: true },
   );
 
   if (event === "bounced") {

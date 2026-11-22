@@ -1,5 +1,6 @@
 import "server-only";
 import { AuditLog } from "@/models/AuditLog";
+import mongoose from "mongoose";
 
 export interface AuditInput {
   actorEmail: string;
@@ -14,7 +15,10 @@ export async function logAudit(input: AuditInput): Promise<void> {
   try {
     await AuditLog.create({
       actorEmail: input.actorEmail,
-      actorId: input.actorId,
+      actorId:
+        input.actorId && mongoose.isValidObjectId(input.actorId)
+          ? input.actorId
+          : undefined,
       action: input.action,
       targetType: input.targetType,
       targetId: input.targetId,
