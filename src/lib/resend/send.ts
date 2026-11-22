@@ -1,5 +1,8 @@
 import "server-only";
-import { getClientForSendingDomain } from "@/lib/resend/client";
+import {
+  getClientForSendingDomain,
+  type ResolvedDomainClient,
+} from "@/lib/resend/client";
 import { assertStagingSendAllowed } from "@/lib/staging/guard";
 import { getEnv } from "@/config/env";
 import { resolveReplyTo } from "@/lib/resend/reply-to";
@@ -26,9 +29,18 @@ export interface SendThroughDomainResult {
 export async function sendThroughDomain(
   input: SendThroughDomainInput,
 ): Promise<SendThroughDomainResult> {
-  assertStagingSendAllowed(input.to);
-
-  const { client, domain } = await getClientForSendingDomain(input.domainId);
+  let client: ResolvedDomainClient["client"];
+  let domain: ResolvedDomainClient["domain"];
+  try {
+    assertStagingSendAllowed(input.to);
+    ({ client, domain } = await getClientForSendingDomain(input.domainId));
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : "Sending domain unavailable",
+    };
+  }
 
   const fromName =
     input.fromName ?? domain.defaultSenderName ?? getEnv().EMAIL_FROM_NAME;

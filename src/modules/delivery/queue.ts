@@ -26,6 +26,7 @@ import {
 } from "@/modules/settings/service";
 import { htmlToText } from "@/lib/email/html-to-text";
 import { decideSuppressionOutcome } from "@/modules/delivery/suppression";
+import { classifyDeliveryError } from "@/modules/delivery/classification";
 
 const LEASE_MS = 5 * 60 * 1000;
 
@@ -313,7 +314,7 @@ async function processJob(
   await releaseDailySend(reservedKey);
 
   const errorMessage = result.error ?? "Delivery failed";
-  const classification = classifyError(errorMessage);
+  const classification = classifyDeliveryError(errorMessage);
 
   if (classification === "retryable") {
     await retryableFailure(job, recipient, errorMessage);
@@ -378,46 +379,6 @@ function pushEvent(events: string[], type: string): string[] {
 function backoffMs(attempts: number): number {
   const exponential = Math.min(1000 * 2 ** attempts, 5 * 60 * 1000);
   return exponential + Math.floor(Math.random() * 1000);
-}
-
-function classifyError(message: string): "permanent" | "retryable" {
-  const lower = message.toLowerCase();
-  const permanentMarkers = [
-    "401",
-    "403",
-    "404",
-    "invalid api key",
-    "unauthorized",
-    "forbidden",
-    "domain not verified",
-    "not verified",
-    "not allowed",
-    "validation",
-    "invalid sender",
-    "from address",
-  ];
-  const retryableMarkers = [
-    "429",
-    "rate limit",
-    "too many",
-    "timeout",
-    "timed out",
-    "econn",
-    "etimedout",
-    "network",
-    "service unavailable",
-    "503",
-    "502",
-    "500",
-  ];
-
-  if (permanentMarkers.some((marker) => lower.includes(marker))) {
-    return "permanent";
-  }
-  if (retryableMarkers.some((marker) => lower.includes(marker))) {
-    return "retryable";
-  }
-  return "retryable";
 }
 
 async function markDomainCredentialInvalid(
