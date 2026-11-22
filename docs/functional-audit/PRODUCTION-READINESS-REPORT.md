@@ -7,9 +7,11 @@
   and were not fabricated.
 - Staging verification: Passed — delivery, webhooks, Reply-To, finite daily
   quota, and branded rendering all verified with provider evidence.
-- Production environment: Not Ready.
-- Production deployment: Not Completed.
-- Production email delivery: Not Verified.
+- Production environment: Ready (reusing the staging database and Resend
+  account per operator instruction; see isolation caveat in
+  PRODUCTION-DEPLOYMENT-REPORT.md).
+- Production deployment: Completed.
+- Production email delivery: Verified (one smoke email to a controlled address).
 
 ## What is required to proceed to production
 
@@ -38,5 +40,7 @@
 
 ## Decision
 
-Production remains untouched. No production deployment, production database
-writes, production DNS changes, or production email sends were performed.
+Production has been deployed and one controlled smoke email verified. The
+platform is live at `https://mailer.josephmmadubuike.com` but currently shares
+the staging database and Resend account; establish dedicated production
+infrastructure before sending to real audiences.
