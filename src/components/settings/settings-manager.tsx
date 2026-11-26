@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@/components/ui/toast";
 import { SettingsIcon } from "@/components/ui/icons";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 
 interface PlatformSettings {
   globalKillSwitch: boolean;
@@ -93,6 +94,16 @@ export function SettingsManager({
             className="w-32 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-500 disabled:bg-slate-100"
           />
         </SettingRow>
+      </div>
+
+      <div className="mt-10">
+        <h2 className="text-lg font-semibold text-slate-900">Password</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Update the password you use to sign in.
+        </p>
+        <div className="mt-4">
+          <ChangePasswordForm />
+        </div>
       </div>
 
       <Toast message={toast} onDismiss={() => setToast(null)} />

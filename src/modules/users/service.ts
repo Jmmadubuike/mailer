@@ -1,6 +1,6 @@
 import "server-only";
 import { User, type IUser, type UserRole } from "@/models/User";
-import { hashPassword } from "@/lib/security/password";
+import { hashPassword, verifyPassword } from "@/lib/security/password";
 import { AppError } from "@/lib/errors";
 import { isLastActiveOwner } from "@/modules/users/ownership";
 
@@ -72,4 +72,30 @@ export async function setUserPassword(id: string, password: string): Promise<voi
     { new: true },
   );
   if (!user) throw new AppError("User not found", 404);
+}
+
+export async function changeOwnPassword(
+  id: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await User.findById(id).select("+passwordHash");
+  if (!user) throw new AppError("User not found", 404);
+
+  const currentPasswordOk = await verifyPassword(
+    currentPassword,
+    user.passwordHash,
+  );
+  if (!currentPasswordOk) {
+    throw new AppError("Current password is incorrect", 401);
+  }
+  if (currentPassword === newPassword) {
+    throw new AppError(
+      "New password must be different from your current password",
+      400,
+    );
+  }
+
+  user.passwordHash = await hashPassword(newPassword);
+  await user.save();
 }
