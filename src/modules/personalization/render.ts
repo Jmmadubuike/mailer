@@ -1,5 +1,9 @@
 export type PersonalizationContext = Record<string, unknown>;
 
+export const DEFAULT_PERSONALIZATION_FALLBACKS: Record<string, string> = {
+  first_name: "there",
+};
+
 export interface RenderOptions {
   html?: boolean;
 }

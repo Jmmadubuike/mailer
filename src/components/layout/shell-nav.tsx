@@ -6,6 +6,23 @@ import { usePathname } from "next/navigation";
 import type { SessionPayload } from "@/lib/auth/session";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { cn } from "@/lib/utils";
+import {
+  AnalyticsIcon,
+  AuditLogsIcon,
+  CampaignsIcon,
+  ContactsIcon,
+  CreateCampaignIcon,
+  ImportIcon,
+  ListsIcon,
+  OverviewIcon,
+  SegmentsIcon,
+  SendingDomainsIcon,
+  SettingsIcon,
+  SuppressionsIcon,
+  TeamIcon,
+  TemplatesIcon,
+  type IconComponent,
+} from "@/components/ui/icons";
 
 const ALL_ROLES = ["owner", "administrator", "campaign_manager", "viewer"] as const;
 const MANAGER_ROLES = ["owner", "administrator", "campaign_manager"] as const;
@@ -14,6 +31,7 @@ const ADMIN_ROLES = ["owner", "administrator"] as const;
 interface NavItem {
   href: string;
   label: string;
+  icon: IconComponent;
   roles: readonly string[];
 }
 
@@ -25,22 +43,26 @@ interface NavSection {
 const SECTIONS: NavSection[] = [
   {
     title: null,
-    items: [{ href: "/dashboard", label: "Overview", roles: ALL_ROLES }],
+    items: [
+      { href: "/dashboard", label: "Overview", icon: OverviewIcon, roles: ALL_ROLES },
+    ],
   },
   {
     title: "Audience",
     items: [
-      { href: "/dashboard/lists", label: "Mailing Lists", roles: ALL_ROLES },
-      { href: "/dashboard/contacts", label: "Contacts", roles: ALL_ROLES },
+      { href: "/dashboard/lists", label: "Mailing Lists", icon: ListsIcon, roles: ALL_ROLES },
+      { href: "/dashboard/contacts", label: "Contacts", icon: ContactsIcon, roles: ALL_ROLES },
       {
         href: "/dashboard/contacts/import",
         label: "Import Contacts",
+        icon: ImportIcon,
         roles: MANAGER_ROLES,
       },
-      { href: "/dashboard/segments", label: "Segments", roles: ALL_ROLES },
+      { href: "/dashboard/segments", label: "Segments", icon: SegmentsIcon, roles: ALL_ROLES },
       {
         href: "/dashboard/suppressions",
         label: "Suppressions",
+        icon: SuppressionsIcon,
         roles: ALL_ROLES,
       },
     ],
@@ -48,19 +70,20 @@ const SECTIONS: NavSection[] = [
   {
     title: "Campaigns",
     items: [
-      { href: "/dashboard/campaigns", label: "All Campaigns", roles: ALL_ROLES },
+      { href: "/dashboard/campaigns", label: "All Campaigns", icon: CampaignsIcon, roles: ALL_ROLES },
       {
         href: "/dashboard/campaigns/new",
         label: "Create Campaign",
+        icon: CreateCampaignIcon,
         roles: MANAGER_ROLES,
       },
-      { href: "/dashboard/templates", label: "Templates", roles: ALL_ROLES },
+      { href: "/dashboard/templates", label: "Templates", icon: TemplatesIcon, roles: ALL_ROLES },
     ],
   },
   {
     title: "Reports",
     items: [
-      { href: "/dashboard/analytics", label: "Analytics", roles: ALL_ROLES },
+      { href: "/dashboard/analytics", label: "Analytics", icon: AnalyticsIcon, roles: ALL_ROLES },
     ],
   },
   {
@@ -69,13 +92,15 @@ const SECTIONS: NavSection[] = [
       {
         href: "/dashboard/sending-domains",
         label: "Sending Domains",
+        icon: SendingDomainsIcon,
         roles: ["owner"],
       },
-      { href: "/dashboard/settings", label: "Settings", roles: ALL_ROLES },
-      { href: "/dashboard/team", label: "Team Members", roles: ADMIN_ROLES },
+      { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon, roles: ALL_ROLES },
+      { href: "/dashboard/team", label: "Team Members", icon: TeamIcon, roles: ADMIN_ROLES },
       {
         href: "/dashboard/audit-logs",
         label: "Audit Logs",
+        icon: AuditLogsIcon,
         roles: ADMIN_ROLES,
       },
     ],
@@ -110,6 +135,7 @@ export function ShellNav({
     <>
       <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-800 bg-slate-900 px-4 lg:hidden">
         <span className="flex items-center gap-2 text-base font-semibold text-white">
+          <SendingDomainsIcon className="h-5 w-5" />
           Mailer
           {staging && (
             <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
@@ -160,6 +186,7 @@ export function ShellNav({
       >
         <div className="flex h-16 items-center justify-between border-b border-slate-800 px-6">
           <span className="flex items-center gap-2 text-lg font-semibold">
+            <SendingDomainsIcon className="h-5 w-5 text-slate-100" />
             Mailer
             {staging && (
               <span className="rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
@@ -205,13 +232,14 @@ export function ShellNav({
                     onClick={() => setOpen(false)}
                     aria-current={isActive(item.href) ? "page" : undefined}
                     className={cn(
-                      "block rounded-md px-3 py-2 text-sm font-medium",
+                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium",
                       isActive(item.href)
                         ? "bg-slate-800 text-white"
                         : "text-slate-300 hover:bg-slate-800 hover:text-white",
                     )}
                   >
-                    {item.label}
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
                   </Link>
                 ))}
             </div>

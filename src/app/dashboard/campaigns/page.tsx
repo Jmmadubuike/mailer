@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/authorize";
 import { listCampaigns } from "@/modules/campaigns/service";
 import { SendingDomain } from "@/models/SendingDomain";
 import { Badge } from "@/components/ui/badge";
+import { CampaignsIcon, PlusIcon } from "@/components/ui/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -28,15 +29,19 @@ export default async function CampaignsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Campaigns</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+            <CampaignsIcon className="h-5 w-5 text-slate-400" />
+            Campaigns
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             Every campaign is bound to a single sending domain.
           </p>
         </div>
         <Link
           href="/dashboard/campaigns/new"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          className="flex items-center gap-1.5 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
         >
+          <PlusIcon className="h-4 w-4" />
           New campaign
         </Link>
       </div>

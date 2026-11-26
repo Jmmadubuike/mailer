@@ -26,6 +26,3 @@ export const updateSendingDomainSchema = z.object({
   defaultReplyTo: email.optional().or(z.literal("")),
 });
 
-export const testDomainSchema = z.object({
-  to: email,
-});

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@/components/ui/toast";
+import { SettingsIcon } from "@/components/ui/icons";
 
 interface PlatformSettings {
   globalKillSwitch: boolean;
@@ -40,7 +41,10 @@ export function SettingsManager({
   return (
     <div className="max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <SettingsIcon className="h-5 w-5 text-slate-400" />
+          Settings
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
           Platform-wide sending safeguards.
         </p>

@@ -36,7 +36,6 @@ domain.
 - `GET /api/sending-domains/stats` (combined) and
   `GET /api/sending-domains/:id/stats` (per domain)
 - `POST /api/sending-domains/:id/verify`
-- `POST /api/sending-domains/:id/test`
 - `POST /api/sending-domains/:id/activate` and `.../deactivate`
 - `POST /api/sending-domains/:id/emergency-stop`
 

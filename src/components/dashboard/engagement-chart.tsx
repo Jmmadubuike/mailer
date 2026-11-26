@@ -22,9 +22,9 @@ export function EngagementChart({ data }: { data: EngagementPoint[] }) {
           <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
           <Tooltip />
           <Legend />
-          <Line type="monotone" dataKey="sent" name="Sent" stroke="#0f172a" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="opened" name="Opens" stroke="#4f46e5" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="clicked" name="Clicks" stroke="#2563eb" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="sent" name="Emails sent" stroke="#64748b" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="opened" name="Opened" stroke="#16a34a" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="clicked" name="Clicked" stroke="#2563eb" strokeWidth={2} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

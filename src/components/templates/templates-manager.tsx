@@ -1,3 +1,5 @@
+import { TemplatesIcon } from "@/components/ui/icons";
+
 export function TemplatesManager({
   templates,
 }: {
@@ -12,7 +14,10 @@ export function TemplatesManager({
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Templates</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <TemplatesIcon className="h-5 w-5 text-slate-400" />
+          Templates
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
           Reusable emails with personalization variables, managed in code.
         </p>

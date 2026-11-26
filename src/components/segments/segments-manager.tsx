@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@/components/ui/toast";
 import { Dialog } from "@/components/ui/dialog";
+import { SegmentsIcon } from "@/components/ui/icons";
 import {
   SEGMENT_OPERATORS,
   type SegmentCondition,
@@ -55,7 +56,10 @@ export function SegmentsManager({ segments }: { segments: SegmentDTO[] }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Segments</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+            <SegmentsIcon className="h-5 w-5 text-slate-400" />
+            Segments
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             Dynamic audiences evaluated against contact attributes.
           </p>

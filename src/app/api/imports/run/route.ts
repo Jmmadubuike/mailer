@@ -7,9 +7,10 @@ import { runImport } from "@/modules/imports/service";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 const schema = z.object({
-  rows: z.array(z.record(z.string(), z.string())).max(10000),
+  rows: z.array(z.record(z.string(), z.string())).max(100000),
   mapping: z.object({
     email: z.string().min(1),
     firstName: z.string().optional(),

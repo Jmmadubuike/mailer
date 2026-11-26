@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Toast } from "@/components/ui/toast";
 import { Dialog } from "@/components/ui/dialog";
+import { ListsIcon } from "@/components/ui/icons";
 
 interface ListDTO {
   id: string;
@@ -73,7 +74,10 @@ export function ListsManager({ lists }: { lists: ListDTO[] }) {
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Mailing Lists</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <ListsIcon className="h-5 w-5 text-slate-400" />
+          Mailing Lists
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
           Build audiences that campaigns can target.
         </p>

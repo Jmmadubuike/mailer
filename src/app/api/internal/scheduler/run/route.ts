@@ -5,6 +5,7 @@ import { dispatchDueCampaigns } from "@/modules/delivery/dispatch";
 import { finalizeStalledCampaigns, processQueue } from "@/modules/delivery/queue";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const secret =

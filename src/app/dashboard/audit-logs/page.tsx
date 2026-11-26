@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/db/client";
 import { requireRole } from "@/lib/auth/authorize";
 import { AuditLog } from "@/models/AuditLog";
+import { AuditLogsIcon } from "@/components/ui/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,10 @@ export default async function AuditLogsPage() {
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Audit Logs</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <AuditLogsIcon className="h-5 w-5 text-slate-400" />
+          Audit Logs
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
           Recent administrative activity across the platform.
         </p>

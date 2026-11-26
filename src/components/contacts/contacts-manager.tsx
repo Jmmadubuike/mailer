@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
 import { Dialog } from "@/components/ui/dialog";
+import { ContactsIcon } from "@/components/ui/icons";
 
 export interface ContactDTO {
   id: string;
@@ -105,7 +106,10 @@ export function ContactsManager({
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Contacts</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+            <ContactsIcon className="h-5 w-5 text-slate-400" />
+            Contacts
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             {total} contact{total === 1 ? "" : "s"} in the central database.
           </p>

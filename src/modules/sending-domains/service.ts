@@ -15,7 +15,6 @@ import {
   getProviderDomain,
   verifyProviderDomain,
 } from "@/lib/resend/domains";
-import { sendThroughDomain } from "@/lib/resend/send";
 import { logAudit } from "@/lib/audit";
 import { AppError } from "@/lib/errors";
 import type {
@@ -250,45 +249,6 @@ export async function refreshVerificationStatus(id: string): Promise<DomainVerif
     lastVerifiedAt: new Date(),
   });
   return status;
-}
-
-export async function testConnectivity(
-  id: string,
-  to: string,
-  actor: Actor,
-): Promise<{ ok: boolean; message: string; messageId?: string }> {
-  const domain = await findDomainOrThrow(id);
-
-  const result = await sendThroughDomain({
-    domainId: id,
-    to,
-    subject: `Connectivity test from ${domain.domain}`,
-    html: `<p>This is a connectivity test sent from the domain <strong>${domain.domain}</strong>.</p>`,
-  });
-
-  const credentialStatus: "ok" | "invalid" = result.ok ? "ok" : "invalid";
-
-  await SendingDomain.findByIdAndUpdate(id, {
-    lastTestedAt: new Date(),
-    credentialStatus,
-  });
-
-  await logAudit({
-    actorEmail: actor.email,
-    actorId: actor.id,
-    action: "sending_domain.connectivity_test",
-    targetType: "SendingDomain",
-    targetId: id,
-    meta: { ok: result.ok, messageId: result.messageId },
-  });
-
-  return {
-    ok: result.ok,
-    message: result.ok
-      ? `Test email accepted by Resend${result.messageId ? ` (message ${result.messageId})` : ""}`
-      : result.error ?? "Test failed",
-    messageId: result.messageId,
-  };
 }
 
 export async function getSendableOptions(): Promise<SendableDomainOption[]> {

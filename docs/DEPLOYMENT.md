@@ -6,5 +6,5 @@ environment, including `CRON_SECRET`. Vercel Cron jobs are declared in
 automatically.
 
 Before sending real email: verify the Resend account, verify each sending
-domain, confirm SPF/DKIM/DMARC, configure the webhook endpoint to
-`/api/webhooks/resend`, and run the sending-domain connectivity tests.
+domain, confirm SPF/DKIM/DMARC, and configure the webhook endpoint to
+`/api/webhooks/resend`.

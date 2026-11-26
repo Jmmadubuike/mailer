@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/authorize";
 import { getDomainStats } from "@/modules/sending-domains/service";
 import { SendingDomain } from "@/models/SendingDomain";
 import { Stat } from "@/components/ui/stat";
+import { AnalyticsIcon } from "@/components/ui/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,10 @@ export default async function AnalyticsPage() {
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Analytics</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <AnalyticsIcon className="h-5 w-5 text-slate-400" />
+          Analytics
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
           Delivery and engagement across all sending domains, aggregated from
           recipient records and provider webhooks.

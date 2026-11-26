@@ -16,7 +16,10 @@ import { Suppression } from "@/models/Suppression";
 import { SendingDomain } from "@/models/SendingDomain";
 import { assertSendableDomain } from "@/modules/sending-domains/service";
 import { sendThroughDomain } from "@/lib/resend/send";
-import { renderTemplate } from "@/modules/personalization/render";
+import {
+  DEFAULT_PERSONALIZATION_FALLBACKS,
+  renderTemplate,
+} from "@/modules/personalization/render";
 import { createUnsubscribeToken } from "@/modules/unsubscribe/token";
 import { sanitizeEmailHtml } from "@/lib/security/sanitize";
 import {
@@ -273,15 +276,26 @@ async function processJob(
   const renderedHtml = renderTemplate(
     sanitizeEmailHtml(campaign.htmlContent ?? ""),
     context,
+    DEFAULT_PERSONALIZATION_FALLBACKS,
   );
 
   const result = await sendThroughDomain({
     domainId,
     to: recipient.email,
-    subject: renderTemplate(campaign.subject, context, {}, { html: false }),
+    subject: renderTemplate(
+      campaign.subject,
+      context,
+      DEFAULT_PERSONALIZATION_FALLBACKS,
+      { html: false },
+    ),
     html: renderedHtml,
     text: campaign.textContent
-      ? renderTemplate(campaign.textContent, context, {}, { html: false })
+      ? renderTemplate(
+          campaign.textContent,
+          context,
+          DEFAULT_PERSONALIZATION_FALLBACKS,
+          { html: false },
+        )
       : htmlToText(renderedHtml),
     fromName: campaign.fromName,
     fromEmail: campaign.fromEmail,

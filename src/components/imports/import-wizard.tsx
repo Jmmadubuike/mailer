@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { parseImportFile, type ParsedFile } from "@/lib/imports/client";
 import { Stat } from "@/components/ui/stat";
+import { ImportIcon } from "@/components/ui/icons";
 
 interface ListOption {
   id: string;
@@ -60,35 +61,72 @@ export function ImportWizard({ lists }: { lists: ListOption[] }) {
     if (!parsed) return;
     setBusy(true);
     setError(null);
-    const response = await fetch("/api/imports/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        rows: parsed.rows,
-        mapping: {
-          ...mapping,
-          customFields: Object.fromEntries(customFields.filter(([key]) => key)),
-        },
-        duplicateMode,
-        confirmConsent: consent,
-        listId: listId || undefined,
-      }),
-    });
-    const body = await response.json().catch(() => null);
-    setBusy(false);
-    if (!response.ok) {
-      setError(body?.error ?? "Import failed");
-      return;
+    try {
+      const mappingPayload = {
+        ...mapping,
+        customFields: Object.fromEntries(customFields.filter(([key]) => key)),
+      };
+      const chunkSize = 5000;
+      const chunks: Array<Array<Record<string, string>>> = [];
+      for (let index = 0; index < parsed.rows.length; index += chunkSize) {
+        chunks.push(parsed.rows.slice(index, index + chunkSize));
+      }
+
+      const aggregated: ImportResult = {
+        imported: 0,
+        updated: 0,
+        skipped: 0,
+        duplicates: 0,
+        invalid: 0,
+        report: [],
+      };
+
+      for (const rows of chunks) {
+        const response = await fetch("/api/imports/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rows,
+            mapping: mappingPayload,
+            duplicateMode,
+            confirmConsent: consent,
+            listId: listId || undefined,
+          }),
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(body?.error ?? "Import failed");
+        }
+        aggregated.imported += body.imported ?? 0;
+        aggregated.updated += body.updated ?? 0;
+        aggregated.skipped += body.skipped ?? 0;
+        aggregated.duplicates += body.duplicates ?? 0;
+        aggregated.invalid += body.invalid ?? 0;
+        aggregated.report.push(...(body.report ?? []));
+      }
+
+      aggregated.report.sort(
+        (a, b) => reportPriority(a.status) - reportPriority(b.status),
+      );
+      aggregated.report = aggregated.report.slice(0, 1000);
+
+      setResult(aggregated);
+      setStep(2);
+      router.refresh();
+    } catch (runError) {
+      setError(runError instanceof Error ? runError.message : "Import failed");
+    } finally {
+      setBusy(false);
     }
-    setResult(body);
-    setStep(2);
-    router.refresh();
   }
 
   if (step === 2 && result) {
     return (
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Import report</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <ImportIcon className="h-5 w-5 text-slate-400" />
+          Import report
+        </h1>
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <Stat label="Imported" value={result.imported} size="compact" />
           <Stat label="Updated" value={result.updated} size="compact" />
@@ -136,7 +174,10 @@ export function ImportWizard({ lists }: { lists: ListOption[] }) {
   return (
     <div className="max-w-3xl">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Import contacts</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-slate-900">
+          <ImportIcon className="h-5 w-5 text-slate-400" />
+          Import contacts
+        </h1>
         <p className="mt-1 text-sm text-slate-500">
           Upload a CSV or XLSX file, map its columns, and confirm before importing.
         </p>
@@ -269,5 +310,13 @@ function ColumnSelect({ label, value, onChange, columns }: { label: string; valu
       </select>
     </div>
   );
+}
+
+function reportPriority(status: string): number {
+  if (status === "invalid") return 0;
+  if (status === "duplicate") return 1;
+  if (status === "skipped") return 2;
+  if (status === "updated") return 3;
+  return 4;
 }
 

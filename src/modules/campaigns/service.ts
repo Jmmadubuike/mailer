@@ -12,7 +12,10 @@ import {
 import { processQueue } from "@/modules/delivery/queue";
 import { sanitizeEmailHtml } from "@/lib/security/sanitize";
 import { sendThroughDomain } from "@/lib/resend/send";
-import { renderTemplate } from "@/modules/personalization/render";
+import {
+  DEFAULT_PERSONALIZATION_FALLBACKS,
+  renderTemplate,
+} from "@/modules/personalization/render";
 import { htmlToText } from "@/lib/email/html-to-text";
 
 export interface CreateCampaignInput {
@@ -243,12 +246,30 @@ export async function sendCampaignTest(
   const result = await sendThroughDomain({
     domainId: campaign.sendingDomainId.toString(),
     to,
-    subject: renderTemplate(campaign.subject, context, {}, { html: false }),
-    html: renderTemplate(sanitizeEmailHtml(campaign.htmlContent ?? ""), context),
+    subject: renderTemplate(
+      campaign.subject,
+      context,
+      DEFAULT_PERSONALIZATION_FALLBACKS,
+      { html: false },
+    ),
+    html: renderTemplate(
+      sanitizeEmailHtml(campaign.htmlContent ?? ""),
+      context,
+      DEFAULT_PERSONALIZATION_FALLBACKS,
+    ),
     text: campaign.textContent
-      ? renderTemplate(campaign.textContent, context, {}, { html: false })
+      ? renderTemplate(
+          campaign.textContent,
+          context,
+          DEFAULT_PERSONALIZATION_FALLBACKS,
+          { html: false },
+        )
       : htmlToText(
-          renderTemplate(sanitizeEmailHtml(campaign.htmlContent ?? ""), context),
+          renderTemplate(
+            sanitizeEmailHtml(campaign.htmlContent ?? ""),
+            context,
+            DEFAULT_PERSONALIZATION_FALLBACKS,
+          ),
         ),
     fromName: campaign.fromName,
     fromEmail: campaign.fromEmail,
