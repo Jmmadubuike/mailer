@@ -18,7 +18,7 @@ const globalCache = (globalThis as { __mailerMongoose?: MongooseCache })
   globalCache;
 
 export async function connectDB(): Promise<typeof mongoose> {
-  if (mongoose.connection.readyState >= 1) {
+  if (mongoose.connection.readyState === 1) {
     return mongoose;
   }
 
