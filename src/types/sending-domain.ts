@@ -1,6 +1,7 @@
 import type {
   ApiKeyPermission,
   CredentialStatus,
+  DmarcStatus,
   DnsRecord,
   DomainVerificationStatus,
 } from "@/models/SendingDomain";
@@ -20,6 +21,8 @@ export interface SendingDomainDTO {
   defaultSenderAddress?: string;
   defaultReplyTo?: string;
   credentialStatus: CredentialStatus;
+  dmarcStatus: DmarcStatus;
+  dmarcPolicy?: string;
   lastTestedAt?: string;
   lastVerifiedAt?: string;
   dnsRecords: DnsRecord[];

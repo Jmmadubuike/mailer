@@ -24,6 +24,9 @@ export type CredentialStatus = (typeof CREDENTIAL_STATUSES)[number];
 export const API_KEY_PERMISSIONS = ["sending_access", "full_access"] as const;
 export type ApiKeyPermission = (typeof API_KEY_PERMISSIONS)[number];
 
+export const DMARC_STATUSES = ["unknown", "missing", "present", "invalid"] as const;
+export type DmarcStatus = (typeof DMARC_STATUSES)[number];
+
 export interface DnsRecord {
   record: string;
   name: string;
@@ -52,6 +55,8 @@ export interface ISendingDomain {
   defaultSenderAddress?: string;
   defaultReplyTo?: string;
   credentialStatus: CredentialStatus;
+  dmarcStatus: DmarcStatus;
+  dmarcPolicy?: string;
   lastTestedAt?: Date;
   lastVerifiedAt?: Date;
   dnsRecords: DnsRecord[];
@@ -114,6 +119,12 @@ const sendingDomainSchema = new Schema<ISendingDomain>(
       enum: CREDENTIAL_STATUSES,
       default: "unknown",
     },
+    dmarcStatus: {
+      type: String,
+      enum: DMARC_STATUSES,
+      default: "unknown",
+    },
+    dmarcPolicy: { type: String },
     lastTestedAt: { type: Date },
     lastVerifiedAt: { type: Date },
     dnsRecords: { type: [dnsRecordSchema], default: [] },

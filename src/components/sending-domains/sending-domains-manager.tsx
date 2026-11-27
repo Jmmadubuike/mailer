@@ -288,6 +288,7 @@ function DomainCard({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <StatusBadge active={domain.isActive} />
         <CredentialBadge status={domain.credentialStatus} />
+        <DmarcBadge status={domain.dmarcStatus} />
         {domain.emergencyKillSwitch && (
           <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
             Emergency stop
@@ -433,6 +434,26 @@ function CredentialBadge({
       )}
     >
       {status}
+    </span>
+  );
+}
+
+function DmarcBadge({ status }: { status: SendingDomainDTO["dmarcStatus"] }) {
+  const styles: Record<string, string> = {
+    present: "bg-emerald-100 text-emerald-700",
+    missing: "bg-amber-100 text-amber-700",
+    invalid: "bg-red-100 text-red-700",
+    unknown: "bg-slate-100 text-slate-600",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium",
+        styles[status],
+      )}
+    >
+      dmarc {status}
     </span>
   );
 }
@@ -753,6 +774,36 @@ function DnsDialog({
           ))}
         </ul>
       )}
+
+      <div className="mt-5 rounded-md border border-slate-200 bg-white p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm font-medium text-slate-800">DMARC record</p>
+          <DmarcBadge status={domain.dmarcStatus} />
+        </div>
+        {domain.dmarcStatus === "present" ? (
+          <p className="mt-1 text-sm text-slate-500">
+            DMARC is published{domain.dmarcPolicy ? ` with policy p=${domain.dmarcPolicy}` : ""}.
+          </p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-slate-500">
+              Add the TXT record below at your DNS provider, then click Verify
+              to re-check authentication.
+            </p>
+            <div className="mt-3 rounded-md bg-slate-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                TXT record
+              </p>
+              <code className="mt-1 block break-all text-xs leading-relaxed text-slate-700">
+                Name: _dmarc.{domain.domain}
+              </code>
+              <code className="mt-1 block break-all text-xs leading-relaxed text-slate-700">
+                Value: v=DMARC1; p=none;
+              </code>
+            </div>
+          </>
+        )}
+      </div>
 
       <div className="mt-5 flex justify-end">
         <button

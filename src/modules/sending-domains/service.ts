@@ -15,6 +15,7 @@ import {
   getProviderDomain,
   verifyProviderDomain,
 } from "@/lib/resend/domains";
+import { checkDmarc } from "@/modules/sending-domains/deliverability";
 import { logAudit } from "@/lib/audit";
 import { AppError } from "@/lib/errors";
 import type {
@@ -39,6 +40,8 @@ function serialize(domain: ISendingDomain): SendingDomainDTO {
     defaultSenderAddress: domain.defaultSenderAddress,
     defaultReplyTo: domain.defaultReplyTo,
     credentialStatus: domain.credentialStatus,
+    dmarcStatus: domain.dmarcStatus,
+    dmarcPolicy: domain.dmarcPolicy,
     lastTestedAt: domain.lastTestedAt?.toISOString(),
     lastVerifiedAt: domain.lastVerifiedAt?.toISOString(),
     dnsRecords: domain.dnsRecords ?? [],
@@ -243,9 +246,12 @@ export async function refreshVerificationStatus(id: string): Promise<DomainVerif
 
   const provider = await getProviderDomain(domain.providerDomainId);
   const status = mapProviderStatus(provider.status);
+  const dmarc = await checkDmarc(domain.domain);
 
   await SendingDomain.findByIdAndUpdate(id, {
     verificationStatus: status,
+    dmarcStatus: dmarc.status,
+    dmarcPolicy: dmarc.policy,
     lastVerifiedAt: new Date(),
   });
   return status;

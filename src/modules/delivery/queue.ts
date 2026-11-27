@@ -13,7 +13,7 @@ import {
 import { Campaign } from "@/models/Campaign";
 import { Contact } from "@/models/Contact";
 import { Suppression } from "@/models/Suppression";
-import { SendingDomain } from "@/models/SendingDomain";
+import { SendingDomain, type ISendingDomain } from "@/models/SendingDomain";
 import { assertSendableDomain } from "@/modules/sending-domains/service";
 import { sendThroughDomain } from "@/lib/resend/send";
 import {
@@ -198,8 +198,9 @@ async function processJob(
 
   const domainId = job.sendingDomainId.toString();
 
+  let sendDomain: ISendingDomain;
   try {
-    await assertSendableDomain(domainId, campaign.fromEmail);
+    sendDomain = await assertSendableDomain(domainId, campaign.fromEmail);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Domain not sendable";
@@ -303,6 +304,8 @@ async function processJob(
     headers: {
       "List-Unsubscribe": `<${unsubscribeUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "Precedence": "bulk",
+      "List-Id": `<mailer.${sendDomain.domain}>`,
     },
     idempotencyKey: job.idempotencyKey,
   });
