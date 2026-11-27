@@ -48,7 +48,8 @@ export function SuppressionsManager({
     setBusy(false);
     setConfirmId(null);
     if (!response.ok) {
-      setToast("Remove failed");
+      const body = await response.json().catch(() => null);
+      setToast(body?.error ?? "Remove failed");
       return;
     }
     router.refresh();

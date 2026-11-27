@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/client";
 import { authorizeApi, isApiError } from "@/lib/auth/api";
 import { Suppression } from "@/models/Suppression";
+import { Contact } from "@/models/Contact";
 import { logAudit } from "@/lib/audit";
 import mongoose from "mongoose";
 
@@ -38,6 +39,13 @@ export async function DELETE(_request: Request, context: Context) {
     );
   }
   await Suppression.findByIdAndDelete(id);
+
+  if (suppression.type === "unsubscribe" && suppression.scope === "all") {
+    await Contact.findOneAndUpdate(
+      { email: suppression.email },
+      { $set: { status: "subscribed" } },
+    );
+  }
 
   await logAudit({
     actorEmail: auth.session.email,
